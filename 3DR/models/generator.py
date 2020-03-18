@@ -4,8 +4,8 @@ from pytorch3d.structures import Meshes
 from pytorch3d.utils import ico_sphere
 
 from 3DR.models.backbone import build_backbone
-from 3DR.models.heads import MeshRefinementHead, VoxelHead
-from 3DR.models.utils import get_blender_intrinsic_matrix
+from 3DR.models.heads import MeshRefinementHead
+from 3DR.utils.coords import get_blender_intrinsic_matrix
 
 class Pixel2MeshHead(nn.Module):
     def __init__(self, cfg):
