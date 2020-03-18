@@ -1,0 +1,38 @@
+RANDOM_SEED: 0
+
+PHASE: "training"
+EXPERIMENT_NAME: "initial"
+RESULTS_DIR: "results"
+OVERFIT: True
+
+SHAPENET_DATA:
+    PATH: "/scratch/jiadeng_root/jiadeng/shared_data/datasets/ShapeNetCore.v1/"
+
+OPTIM:
+    BATCH_SIZE: 2
+    VAL_BATCH_SIZE: 4
+    WORKERS: 8
+    EPOCH: 100
+    LR: 0.001
+    MOMENTUM: 0.9
+    WEIGHT_DECAY: 0.005
+    CLIP_GRADIENTS: 12.5
+
+G:
+    BACKBONE: "resnet50"
+    MESH_HEAD:
+        NAME: "Pixel2MeshHead"
+        NUM_STAGES: 1
+        NUM_GRAPH_CONVS: 1
+        GRAPH_CONV_DIM: 256
+        GRAPH_CONV_INIT: "normal"
+        GT_NUM_SAMPLES: 5000
+        PRED_NUM_SAMPLES: 5000
+        CHAMFER_LOSS_WEIGHT: 1.0
+        NORMAL_LOSS_WEIGHT: 1.0
+        EDGE_LOSS_WEIGHT: 1.0
+D:
+    INPUT_MESH_FEATS: 3
+    HIDDEN_DIMS: [128, 256, 512]
+    CLASSES: 1
+    CONV_INIT: "normal"
