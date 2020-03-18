@@ -7,14 +7,6 @@ from pytorch3d.ops import nn_points_idx, sample_points_from_meshes
 
 logger = logging.getLogger(__name__)
 
-def laplacian_loss(mesh1, mesh2):
-    r"""Returns the change in laplacian over two meshes
-    """
-    lap1 = mesh1.laplacian_packed()
-    lap2 = mesh2.laplacian_packed()
-    lap_loss = torch.mean(torch.sum((lap1 - lap2)**2))
-    return lap_loss
-
 
 @torch.no_grad()
 def compare_meshes(

@@ -64,11 +64,11 @@ class Config(object):
         self._C.OPTIM.WEIGHT_DECAY = 0.001
         self._C.OPTIM.CLIP_GRADIENTS = 12.5
 
-        self._C.GCC = CN()
-        self._C.GCC.INPUT_MESH_FEATS = 3
-        self._C.GCC.HIDDEN_DIMS = [32, 64, 128]
-        self._C.GCC.CLASSES = 57
-        self._C.GCC.CONV_INIT = "normal"
+        self._C.D = CN()
+        self._C.D.INPUT_MESH_FEATS = 3
+        self._C.D.HIDDEN_DIMS = [32, 64, 128]
+        self._C.D.CLASSES = 57
+        self._C.D.CONV_INIT = "normal"
 
         self._C.merge_from_file(config_yaml)
         self._C.merge_from_list(config_override)
@@ -98,7 +98,7 @@ class Config(object):
     def __str__(self):
         common_string: str = str(CN({"RANDOM_SEED": self._C.RANDOM_SEED})) + "\n"
         common_string += str(CN({"DATA": self._C.SHAPENET_DATA})) + "\n"
-        common_string += str(CN({"BASE_MODEL": self._C.GCC})) + "\n"
+        common_string += str(CN({"BASE_MODEL": self._C.D})) + "\n"
         common_string += str(CN({"OPTIM": self._C.OPTIM})) + "\n"
         common_string += str(CN({"CHECKPOINT": self._C.CKP})) + "\n"
         return common_string

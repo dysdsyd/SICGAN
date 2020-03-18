@@ -8,9 +8,9 @@ from pytorch3d.structures.utils import packed_to_list, list_to_padded
 class GraphConvClf(nn.Module):
     def __init__(self, cfg):
         super(GraphConvClf, self).__init__()
-        input_dim = cfg.GCC.INPUT_MESH_FEATS
-        hidden_dims = cfg.GCC.HIDDEN_DIMS 
-        classes = cfg.GCC.CLASSES
+        input_dim = cfg.D.INPUT_MESH_FEATS
+        hidden_dims = cfg.D.HIDDEN_DIMS 
+        classes = cfg.D.CLASSES
         gconv_init = cfg.GCC.CONV_INIT
         
         # Graph Convolution Network
