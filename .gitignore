@@ -34,9 +34,7 @@ MANIFEST
 .mypy_cache
 
 # Datasets and preprocessed files
-data/
 results/
-!probnmn/data/
 
 # Checkpoints directory
 checkpoints/
