@@ -10,11 +10,11 @@ class MeshRefinementHead(nn.Module):
         super(MeshRefinementHead, self).__init__()
 
         # fmt: off
-        input_channels  = cfg.MODEL.MESH_HEAD.COMPUTED_INPUT_CHANNELS
-        self.num_stages = cfg.MODEL.MESH_HEAD.NUM_STAGES
-        hidden_dim      = cfg.MODEL.MESH_HEAD.GRAPH_CONV_DIM
-        stage_depth     = cfg.MODEL.MESH_HEAD.NUM_GRAPH_CONVS
-        graph_conv_init = cfg.MODEL.MESH_HEAD.GRAPH_CONV_INIT
+        input_channels  = cfg.G.MESH_HEAD.COMPUTED_INPUT_CHANNELS
+        self.num_stages = cfg.G.MESH_HEAD.NUM_STAGES
+        hidden_dim      = cfg.G.MESH_HEAD.GRAPH_CONV_DIM
+        stage_depth     = cfg.G.MESH_HEAD.NUM_GRAPH_CONVS
+        graph_conv_init = cfg.G.MESH_HEAD.GRAPH_CONV_INIT
         # fmt: on
 
         self.stages = nn.ModuleList()

@@ -12,15 +12,15 @@ class Pixel2MeshHead(nn.Module):
         super(Pixel2MeshHead, self).__init__()
 
         # fmt: off
-        backbone                = cfg.MODEL.BACKBONE
-        self.ico_sphere_level   = cfg.MODEL.MESH_HEAD.ICO_SPHERE_LEVEL
+        backbone                = cfg.G.BACKBONE
+        self.ico_sphere_level   = cfg.G.MESH_HEAD.ICO_SPHERE_LEVEL
         # fmt: on
 
         self.K = get_blender_intrinsic_matrix()
         # backbone
         self.backbone, feat_dims = build_backbone(backbone)
         # mesh head
-        cfg.MODEL.MESH_HEAD.COMPUTED_INPUT_CHANNELS = sum(feat_dims)
+        cfg.G.MESH_HEAD.COMPUTED_INPUT_CHANNELS = sum(feat_dims)
         self.mesh_head = MeshRefinementHead(cfg)
 
     def _get_projection_matrix(self, N, device):
