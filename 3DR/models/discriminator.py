@@ -11,7 +11,7 @@ class GraphConvClf(nn.Module):
         input_dim = cfg.D.INPUT_MESH_FEATS
         hidden_dims = cfg.D.HIDDEN_DIMS 
         classes = cfg.D.CLASSES
-        gconv_init = cfg.GCC.CONV_INIT
+        gconv_init = cfg.D.CONV_INIT
         
         # Graph Convolution Network
         self.gconvs = nn.ModuleList()
