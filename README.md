@@ -1,1 +1,1 @@
-# 3DR-GAN
+# SICGAN
