@@ -42,6 +42,7 @@ class GraphConvClf(nn.Module):
         verts_padded = list_to_padded(verts_packed)
         
         out  = torch.sum(verts_padded, 1)/verts_size.view(-1,1)
-        out = F.relu(self.fc1(out))
-        out = torch.sigmoid(self.fc2(out))        
+        out = F.relu(self.fc1(out)) 
+        out = self.fc2(out)
+        out = torch.sigmoid(out)
         return out

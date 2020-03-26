@@ -3,20 +3,26 @@ RANDOM_SEED: 0
 PHASE: "training"
 EXPERIMENT_NAME: "initial"
 RESULTS_DIR: "results"
-OVERFIT: True
+OVERFIT: False
 
 SHAPENET_DATA:
     PATH: "/scratch/jiadeng_root/jiadeng/shared_data/datasets/ShapeNetCore.v1/"
-
-OPTIM:
+    
+SOLVER: 
+    LR_SCHEDULER_NAME: "constant"  # {'constant', 'cosine'}
     BATCH_SIZE: 2
-    VAL_BATCH_SIZE: 4
-    WORKERS: 8
-    EPOCH: 100
-    LR: 0.001
+    BATCH_SIZE_EVAL: 2
+    NUM_EPOCHS: 25
+    BASE_LR: 0.001
+    OPTIMIZER: "adam"  # {'sgd', 'adam'}
     MOMENTUM: 0.9
-    WEIGHT_DECAY: 0.005
-    CLIP_GRADIENTS: 12.5
+    WARMUP_ITERS: 500
+    WARMUP_FACTOR: 0.1
+    CHECKPOINT_PERIOD: 24949  # in iters
+    LOGGING_PERIOD: 50  # in iters
+    SKIP_LOSS_THRESH: 50.0
+    LOSS_SKIP_GAMMA: 0.9
+    
 
 G:
     BACKBONE: "resnet50"

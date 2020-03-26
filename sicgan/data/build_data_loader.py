@@ -27,7 +27,7 @@ def build_data_loader(
         batch_size = cfg.SOLVER.BATCH_SIZE_EVAL
         return_mesh = True
         return_id_str = True
-    print("Debug 5")
+#     print("Debug 5")
     splits_file = cfg.DATASETS.SPLITS_FILE
 
     with open(splits_file, "r") as f:
@@ -37,7 +37,7 @@ def build_data_loader(
             split = splits["train"]
         else:
             split = splits[split_name]
-    print("Debug 6")
+#     print("Debug 6")
     #num_gpus = 1
     if multigpu:
         num_gpus = comm.get_world_size()

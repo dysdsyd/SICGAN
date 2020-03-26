@@ -53,6 +53,7 @@ class Config(object):
         self._C.SHAPENET_DATA = CN()
         self._C.SHAPENET_DATA.PATH = '/scratch/jiadeng_root/jiadeng/shared_data/datasets/ShapeNetCore.v1/'
         # self._C.SHAPENET_DATA.TRANSFORM = None
+        
 
         #REMOVE OPTIM OR SOLVER
         self._C.OPTIM = CN()
@@ -83,7 +84,7 @@ class Config(object):
 
         self._C.G = CN()
         self._C.G.BACKBONE = "resnet50"
-        
+ 
         self._C.G.MESH_HEAD = CN()
         self._C.G.MESH_HEAD.NAME = "Pixel2MeshHead"
         self._C.G.MESH_HEAD.NUM_STAGES = 1
@@ -95,7 +96,7 @@ class Config(object):
         self._C.G.MESH_HEAD.CHAMFER_LOSS_WEIGHT = 1.0
         self._C.G.MESH_HEAD.NORMAL_LOSS_WEIGHT = 1.0
         self._C.G.MESH_HEAD.EDGE_LOSS_WEIGHT = 1.0
-        self._C.G.MESH_HEAD.ICO_SPHERE_LEVEL = -1.0
+        self._C.G.MESH_HEAD.ICO_SPHERE_LEVEL = 1.0
         
         
         self._C.D = CN()
@@ -116,7 +117,6 @@ class Config(object):
         self._C.CKP.full_experiment_name = ("exp_%s_%s" % ( time.strftime("%m_%d_%H_%M_%S"), self._C.EXPERIMENT_NAME) )
         self._C.CKP.experiment_path = os.path.join(self._C.RESULTS_DIR, self._C.CKP.full_experiment_name)
         self._C.CKP.best_loss = sys.float_info.max
-        self._C.CKP.best_acc = 0.
 
         # Make an instantiated object of this class immutable.
         #self._C.freeze()

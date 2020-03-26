@@ -8,17 +8,19 @@ from tqdm import tqdm
 import torch
 import numpy as np
 from torch import nn, optim
-from torch.utils.data import DataLoader
 
-from style_transfer.data.datasets import ShapenetDataset
-from style_transfer.models.base_nn import GraphConvClf
-from style_transfer.config import Config
-from style_transfer.utils.torch_utils import train_val_split, save_checkpoint, accuracy
+from sicgan.config import Config
+from sicgan.models import Pixel2MeshHead
+from sicgan.models import GraphConvClf
+from sicgan.data.build_data_loader import build_data_loader
+from sicgan.models import MeshLoss
+from sicgan.utils.torch_utils import save_checkpoint
+# from tensorboardX import SummaryWriter
+
+
 
 import warnings
 warnings.filterwarnings("ignore")
-
-
 # --------------------------------------------------------------------------------------------
 # Argument Parser
 # --------------------------------------------------------------------------------------------
@@ -35,6 +37,7 @@ parser.add_argument(
     "the results directory.",
 )
 
+    
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -74,130 +77,104 @@ if __name__ == "__main__":
     #   INSTANTIATE DATALOADER, MODEL, OPTIMIZER & CRITERION
     # --------------------------------------------------------------------------------------------
     ## Datasets
-    trn_objs, val_objs = train_val_split(config=_C)
-    collate_fn = ShapenetDataset.collate_fn
-    
-    if _C.OVERFIT:
-        trn_objs, val_objs = trn_objs[:10], val_objs[:10]
-    
-    trn_dataset = ShapenetDataset(_C, trn_objs)
-    trn_dataloader = DataLoader(trn_dataset, 
-                            batch_size=_C.OPTIM.BATCH_SIZE, 
-                            shuffle=True, 
-                            collate_fn=collate_fn, 
-                            num_workers=_C.OPTIM.WORKERS)
-    
-    val_dataset = ShapenetDataset(_C, val_objs)
-    val_dataloader = DataLoader(val_dataset, 
-                            batch_size=_C.OPTIM.VAL_BATCH_SIZE, 
-                            shuffle=True, 
-                            collate_fn=collate_fn, 
-                            num_workers=_C.OPTIM.WORKERS)
+    trn_dataloader = build_data_loader(_C, "MeshVox", split_name='train')
+   
     
     print("Training Samples: "+str(len(trn_dataloader)))
-    print("Validation Samples: "+str(len(val_dataloader)))
+    #print("Validation Samples: "+str(len(val_dataloader)))
+    
+    ## Models
+    G = Pixel2MeshHead(_C).cuda()
+    D = GraphConvClf(_C).cuda()
+    
+    # Losses
+    loss_fn_kwargs = {
+        "chamfer_weight": _C.G.MESH_HEAD.CHAMFER_LOSS_WEIGHT,
+        "normal_weight": _C.G.MESH_HEAD.NORMAL_LOSS_WEIGHT,
+        "edge_weight": _C.G.MESH_HEAD.EDGE_LOSS_WEIGHT,
+        "gt_num_samples": _C.G.MESH_HEAD.GT_NUM_SAMPLES,
+        "pred_num_samples": _C.G.MESH_HEAD.PRED_NUM_SAMPLES,
+    }
+    
+    mesh_loss = MeshLoss(**loss_fn_kwargs).cuda()
+    clf_loss = nn.BCELoss().cuda()
+    
+    ## Optimizers
+    G_optimizer = torch.optim.Adam(G.parameters(), lr= 0.0002, betas=(0.5, 0.999))
+    D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.0002, betas=(0.5, 0.999))
+    
+    ## Tensorboard
+#     tb = SummaryWriter(os.path.join(_C.CKP.experiment_path,'tensorboard')) 
 
-    model = GraphConvClf(_C).cuda()
-    model.load_state_dict(torch.load('results/exp_03_16_11_22_19_10classes/model@epoch3.pkl')['state_dict'])
-
-#     optimizer = optim.SGD(
-#         model.parameters(),
-#         lr=_C.OPTIM.LR,
-#         momentum=_C.OPTIM.MOMENTUM,
-#         weight_decay=_C.OPTIM.WEIGHT_DECAY,
-#     )
-    optimizer = optim.Adam(
-        model.parameters(),
-        lr=_C.OPTIM.LR,
-    )
-#     lr_scheduler = optim.lr_scheduler.LambdaLR(  # type: ignore
-#         optimizer, lr_lambda=lambda iteration: 1 - iteration / _C.OPTIM.NUM_ITERATIONS
-#     )
-
-    criterion = nn.CrossEntropyLoss()
     args  = {}
     args['EXPERIMENT_NAME'] =  _C.EXPERIMENT_NAME
     args['full_experiment_name'] = _C.CKP.full_experiment_name
     args['experiment_path'] = _C.CKP.experiment_path
-    args['best_loss'] = _C.CKP.best_loss
-    args['best_acc'] = _C.CKP.best_acc
+    args['best_recon_loss'] = _C.CKP.best_loss
+    
     # --------------------------------------------------------------------------------------------
     #   TRAINING LOOP
     # --------------------------------------------------------------------------------------------
+    step = 0
     total_step = len(trn_dataloader)
     print('\n ***************** Training *****************')
-    for epoch in tqdm(range(4, _C.OPTIM.EPOCH)):
+    
+    for epoch in range(_C.SOLVER.NUM_EPOCHS):
         # --------------------------------------------------------------------------------------------
         #   TRAINING 
         # --------------------------------------------------------------------------------------------
         running_loss = 0.0
         print('Epoch: '+str(epoch))
-        model.train()
         
-        for i, data in enumerate(tqdm(trn_dataloader), 0):
-            if data[0] == None and data[1] == None:
-                continue
-            label = data[0].cuda()
-            mesh = data[1].cuda()
-            # zero the parameter gradients
-            optimizer.zero_grad()
-            # forward + backward + optimize
-            outputs = model(mesh)
-            #print(outputs, label)
-            if outputs.size()[0] == label.size()[0]:
-                loss = criterion(outputs, label)
-                loss.backward()
-                optimizer.step()
-                #lr_scheduler.step()
-                # print statistics
-                running_loss += loss.item()
-            else:
-                print('Shape Mismatch')
-                print(outputs.size(), label.size())
-                print(mesh.verts_packed_to_mesh_idx().unique(return_counts=True)[1])
-        running_loss /= len(trn_dataloader)
-        print('\n\tTraining Loss: '+ str(running_loss))
+        G.train()
+        D.train()
+    
+        for data in tqdm(trn_dataloader):
+            step += 1
+            imgs = data[0].cuda()
+            meshes = data[1].cuda()
         
-        # ----------------------------------------------------------------------------------------
-        #   VALIDATION
-        # ----------------------------------------------------------------------------------------
-        model.eval()
-        val_loss = 0.0
-        val_acc = 0.0
-        print("\n\n\tEvaluating..")
-        for i, data in enumerate(tqdm(val_dataloader), 0):
-            if data[0] == None and data[1] == None:
-                continue
-            label = data[0].cuda()
-            mesh = data[1].cuda()
+            ## Update D network
             with torch.no_grad():
-                batch_prediction = model(mesh)
-                if batch_prediction.size()[0] == label.size()[0]:
-                    loss = criterion(batch_prediction, label)
-                    acc = accuracy(batch_prediction, label)
-                    val_loss += loss.item()
-                    val_acc += np.sum(acc)
-                else:
-                    print('Shape Mismatch')
-                    print(batch_prediction.size(), label.size())
-                    print(mesh.verts_packed_to_mesh_idx().unique(return_counts=True)[1])
-        # Average out the loss
-        val_loss /= len(val_dataloader)
-        val_acc /= len(val_dataloader)
-        print('\n\tValidation Loss: '+str(val_loss))
-        print('\tValidation Acc: '+str(val_acc.item()))
+                meshes_G = G(imgs)
+            D_optimizer.zero_grad()
+            D_neg = D(meshes_G)
+            D_pos = D(meshes)
+            
+            loss_D = 0.5*(clf_loss(D_neg, torch.zeros(D_neg.size()).cuda()) + 
+                          clf_loss(D_pos, torch.ones(D_pos.size()).cuda()))
+            loss_D.backward(retain_graph=True)
+            D_optimizer.step()
+            
+            ## Update G network
+            G_optimizer.zero_grad()
+            meshes_G = G(imgs)
+            recon_loss, _ = mesh_loss(meshes_G, meshes)
+            loss_G = recon_loss + clf_loss(D_neg, torch.ones(D_neg.size()).cuda())
+            loss_G.backward()
+            G_optimizer.step()
+            
+        
+#             tb.add_scalar('data/loss_G', loss_G.item(), step)
+#             tb.add_scalar('data/loss_D', loss_D.item(), step)
+#             tb.add_scalar('data/Reconstruction_loss', recon_loss.item(), step)
+#             tb.flush()
+            if _C.OVERFIT:
+                if step%10==0:
+                    break
+
+        print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f}".format(epoch, loss_D.item(), loss_G.item()))
+        
         # Final save of the model
-        args = save_checkpoint(model      = model,
-                             optimizer  = optimizer,
-                             curr_epoch = epoch,
-                             curr_loss  = val_loss,
-                             curr_step  = (total_step * epoch),
-                             args       = args,
-                             curr_acc   = val_acc.item(),
-                             trn_loss   = running_loss,
-                             filename   = ('model@epoch%d.pkl' %(epoch)))
+        args = save_checkpoint(G = G,
+                               D = D,
+                               curr_epoch = epoch,
+                               G_loss = loss_G.item(),
+                               D_loss = loss_D.item(),
+                               recon_loss = recon_loss.item(),
+                               curr_step = step,
+                               args = args,
+                               filename = ('model@epoch%d.pkl' %(epoch)))
           
         print('---------------------------------------------------------------------------------------\n')
     print('Finished Training')
-    print('Best Accuracy on validation',args['best_acc'])
-    print('Best Loss on validation',args['best_loss'])

@@ -34,9 +34,5 @@ class Pixel2MeshHead(nn.Module):
         P = self._get_projection_matrix(N, device)
 
         init_meshes = ico_sphere(self.ico_sphere_level, device).extend(N)
-        refined_meshes = self.mesh_head(img_feats, init_meshes, P, subdivide=True)
-        return None, refined_meshes
-
-
-def build_model(cfg):
-    return Pixel2MeshHead(cfg)
+        refined_meshes = self.mesh_head(img_feats, init_meshes, P, subdivide=True)[0]
+        return refined_meshes
