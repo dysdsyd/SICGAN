@@ -15,7 +15,7 @@ from sicgan.models import GraphConvClf
 from sicgan.data.build_data_loader import build_data_loader
 from sicgan.models import MeshLoss
 from sicgan.utils.torch_utils import save_checkpoint
-# from tensorboardX import SummaryWriter
+from tensorboardX import SummaryWriter
 
 
 
@@ -155,10 +155,9 @@ if __name__ == "__main__":
             G_optimizer.step()
             
         
-#             tb.add_scalar('data/loss_G', loss_G.item(), step)
-#             tb.add_scalar('data/loss_D', loss_D.item(), step)
-#             tb.add_scalar('data/Reconstruction_loss', recon_loss.item(), step)
-#             tb.flush()
+            tb.add_scalar('data/loss_G', loss_G.item(), step)
+            tb.add_scalar('data/loss_D', loss_D.item(), step)
+            tb.add_scalar('data/Reconstruction_loss', recon_loss.item(), step)
             if _C.OVERFIT:
                 if step%10==0:
                     break
@@ -178,3 +177,4 @@ if __name__ == "__main__":
           
         print('---------------------------------------------------------------------------------------\n')
     print('Finished Training')
+    tb.close() 
