@@ -104,7 +104,7 @@ if __name__ == "__main__":
     D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.0002, betas=(0.5, 0.999))
     
     ## Tensorboard
-#     tb = SummaryWriter(os.path.join(_C.CKP.experiment_path,'tensorboard')) 
+    tb = SummaryWriter(os.path.join(_C.CKP.experiment_path,'tensorboard')) 
 
     args  = {}
     args['EXPERIMENT_NAME'] =  _C.EXPERIMENT_NAME
