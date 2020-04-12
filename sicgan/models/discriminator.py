@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from pytorch3d.ops import GraphConv
-from sicgan.config import Config
 from pytorch3d.structures.utils import packed_to_list, list_to_padded
 
 class GraphConvClf(nn.Module):

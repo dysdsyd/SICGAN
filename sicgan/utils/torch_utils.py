@@ -56,12 +56,17 @@ def train_val_split(config, ratio=0.7):
     return trn_objs, val_objs
 
 
-def save_checkpoint(G, D, curr_epoch, G_loss, D_loss, recon_loss, curr_step, args, filename ):
+def save_checkpoint(G, D, curr_epoch, G_loss, D_loss, val_loss, curr_step, args, filename ):
     """
         Saves a checkpoint and updates the best loss and best weighted accuracy
     """
 #     is_best_loss = recon_loss < args['best_recon_loss']
-    args['best_recon_loss'] = min(args['best_recon_loss'], recon_loss)
+    if val_loss < args['best_recon_loss']:
+        G_path = os.path.join(args['experiment_path'], 'G.pth')
+        D_path = os.path.join(args['experiment_path'], 'D.pth')
+        torch.save(G, G_path)
+        torch.save(D, D_path)
+    args['best_recon_loss'] = min(args['best_recon_loss'], val_loss)
 
     state = {   'epoch':curr_epoch,
                 'step': curr_step,
@@ -70,6 +75,7 @@ def save_checkpoint(G, D, curr_epoch, G_loss, D_loss, recon_loss, curr_step, arg
                 'D': D.state_dict(),
                 'G_loss': G_loss,
                 'D_loss': D_loss,
+                'val_loss':val_loss,
                 'best_recon_loss': args['best_recon_loss']
             }
     path = os.path.join(args['experiment_path'], filename)

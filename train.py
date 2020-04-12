@@ -15,8 +15,7 @@ from sicgan.models import GraphConvClf
 from sicgan.data.build_data_loader import build_data_loader
 from sicgan.models import MeshLoss
 from sicgan.utils.torch_utils import save_checkpoint
-from tensorboardX import SummaryWriter
-
+from torch.utils.tensorboard import SummaryWriter
 
 
 import warnings
@@ -78,10 +77,11 @@ if __name__ == "__main__":
     # --------------------------------------------------------------------------------------------
     ## Datasets
     trn_dataloader = build_data_loader(_C, "MeshVox", split_name='train')
-   
+    val_dataloader = build_data_loader(_C, "MeshVox", split_name='val')
     
-    print("Training Samples: "+str(len(trn_dataloader)))
-    #print("Validation Samples: "+str(len(val_dataloader)))
+    print('Training Samples: '+ str(len(trn_dataloader)))
+    print('Validation Samples: '+ str(len(val_dataloader)))
+    
     
     ## Models
     G = Pixel2MeshHead(_C).cuda()
@@ -123,7 +123,9 @@ if __name__ == "__main__":
         # --------------------------------------------------------------------------------------------
         #   TRAINING 
         # --------------------------------------------------------------------------------------------
-        running_loss = 0.0
+        D_losses = []
+        G_losses = []
+        val_losses = []
         print('Epoch: '+str(epoch))
         
         G.train()
@@ -154,23 +156,42 @@ if __name__ == "__main__":
             loss_G.backward()
             G_optimizer.step()
             
-        
-            tb.add_scalar('data/loss_G', loss_G.item(), step)
-            tb.add_scalar('data/loss_D', loss_D.item(), step)
-            tb.add_scalar('data/Reconstruction_loss', recon_loss.item(), step)
+            D_losses.append(loss_D.item())
+            G_losses.append(loss_G.item())
+            
+            
             if _C.OVERFIT:
                 if step%10==0:
                     break
 
-        print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f}".format(epoch, loss_D.item(), loss_G.item()))
+        print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f}".format(epoch, torch.mean(D_losses), torch.mean(G_losses)))
+        tb.add_scalar('data/loss_G_per_epoch', torch.mean(G_losses), epoch)
+        tb.add_scalar('data/loss_D_per_epoch', torch.mean(D_losses), epoch)
         
-        # Final save of the model
+        # ----------------------------------------------------------------------------------------
+        #   VALIDATION
+        # ----------------------------------------------------------------------------------------
+        model.eval()
+        print("\n\n\tEvaluating..")
+        for i, data in enumerate(tqdm(val_dataloader), 0):
+            imgs = data[0].cuda()
+            meshes = data[1].cuda()
+            
+            
+            with torch.no_grad():
+                meshes_G = G(imgs)
+                val_loss, _ = mesh_loss(meshes_G, meshes)
+            val_losses.append(val_loss.item())
+            
+            tb.add_scalar('data/Validation_Loss', torch.mean(val_losses), epoch)
+        
+#         # Final save of the model
         args = save_checkpoint(G = G,
                                D = D,
                                curr_epoch = epoch,
-                               G_loss = loss_G.item(),
-                               D_loss = loss_D.item(),
-                               recon_loss = recon_loss.item(),
+                               G_loss = torch.mean(G_losses),
+                               D_loss = torch.mean(D_losses),
+                               val_loss = torch.mean(val_losses),
                                curr_step = step,
                                args = args,
                                filename = ('model@epoch%d.pkl' %(epoch)))
