@@ -26,13 +26,14 @@ class Pixel2MeshHead(nn.Module):
     def _get_projection_matrix(self, N, device):
         return self.K[None].repeat(N, 1, 1).to(device).detach()
 
-    def forward(self, imgs):
+    def forward(self, imgs, z):    # z is the latent vector sampled from P(z|x)
         N = imgs.shape[0]
         device = imgs.device
 
         img_feats = self.backbone(imgs)
+        # concat_feats = torch.cat((img_feats,z),dim=1)
         P = self._get_projection_matrix(N, device)
 
         init_meshes = ico_sphere(self.ico_sphere_level, device).extend(N)
-        refined_meshes = self.mesh_head(img_feats, init_meshes, P, subdivide=True)[0]
+        refined_meshes = self.mesh_head(img_feats, z, init_meshes, P, subdivide=True)[0]
         return refined_meshes

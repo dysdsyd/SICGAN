@@ -12,6 +12,7 @@ from torch import nn, optim
 from sicgan.config import Config
 from sicgan.models import Pixel2MeshHead
 from sicgan.models import GraphConvClf
+from sicgan.models import encoder_head
 from sicgan.data.build_data_loader import build_data_loader
 from sicgan.models import MeshLoss
 from sicgan.utils.torch_utils import save_checkpoint
@@ -84,6 +85,7 @@ if __name__ == "__main__":
     
     
     ## Models
+    E = encoder_head(_C).cuda()
     G = Pixel2MeshHead(_C).cuda()
     D = GraphConvClf(_C).cuda()
     
@@ -100,6 +102,7 @@ if __name__ == "__main__":
     clf_loss = nn.BCELoss().cuda()
     
     ## Optimizers
+    E_optimizer = torch.optim.Adam(E.parameters(), lr= 0.0002, betas=(0.5, 0.999))
     G_optimizer = torch.optim.Adam(G.parameters(), lr= 0.0002, betas=(0.5, 0.999))
     D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.0002, betas=(0.5, 0.999))
     
@@ -123,11 +126,13 @@ if __name__ == "__main__":
         # --------------------------------------------------------------------------------------------
         #   TRAINING 
         # --------------------------------------------------------------------------------------------
+        E_losses = []
         D_losses = []
         G_losses = []
         val_losses = []
         print('Epoch: '+str(epoch))
         
+        E.train()
         G.train()
         D.train()
     
@@ -138,7 +143,8 @@ if __name__ == "__main__":
         
             ## Update D network
             with torch.no_grad():
-                meshes_G = G(imgs)
+                z,_,_ = E(imgs)
+                meshes_G = G(imgs,z)
             D_optimizer.zero_grad()
             D_neg = D(meshes_G)
             D_pos = D(meshes)
@@ -148,9 +154,16 @@ if __name__ == "__main__":
             loss_D.backward(retain_graph=True)
             D_optimizer.step()
             
+            ## Update E network
+            E_optimizer.zero_grad()
+            z_x,means,sigmas = E(imgs)
+            loss_kl_E = torch.mean(0.5 * torch.sum(torch.exp(sigmas) + means**2 - 1. - sigmas, 1))
+            loss_kl_E.backward()
+            E_optimizer.step()
+
             ## Update G network
             G_optimizer.zero_grad()
-            meshes_G = G(imgs)
+            meshes_G = G(imgs,z)         # -----Check which z you have to consider here!-------
             recon_loss, _ = mesh_loss(meshes_G, meshes)
             loss_G = recon_loss + clf_loss(D_neg, torch.ones(D_neg.size()).cuda())
             loss_G.backward()
@@ -158,15 +171,16 @@ if __name__ == "__main__":
             
             D_losses.append(loss_D.item())
             G_losses.append(loss_G.item())
-            
+            E_losses.append(loss_kl_E.item())
             
             if _C.OVERFIT:
                 if step%10==0:
                     break
 
-        print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f}".format(epoch, torch.mean(D_losses), torch.mean(G_losses)))
+        print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f} Loss_E: {:.4f}".format(epoch, torch.mean(D_losses), torch.mean(G_losses), torch.mean(E_losses)))
         tb.add_scalar('data/loss_G_per_epoch', torch.mean(G_losses), epoch)
         tb.add_scalar('data/loss_D_per_epoch', torch.mean(D_losses), epoch)
+        tb.add_scalar('data/loss_E_per_epoch', torch.mean(E_losses), epoch)
         
         # ----------------------------------------------------------------------------------------
         #   VALIDATION
@@ -179,7 +193,7 @@ if __name__ == "__main__":
             
             
             with torch.no_grad():
-                meshes_G = G(imgs)
+                meshes_G = G(imgs,z) # -----Check which z you have to consider here!-------
                 val_loss, _ = mesh_loss(meshes_G, meshes)
             val_losses.append(val_loss.item())
             
@@ -188,9 +202,11 @@ if __name__ == "__main__":
 #         # Final save of the model
         args = save_checkpoint(G = G,
                                D = D,
+                               E = E,
                                curr_epoch = epoch,
                                G_loss = torch.mean(G_losses),
                                D_loss = torch.mean(D_losses),
+                               E_loss = torch.mean(E_losses),
                                val_loss = torch.mean(val_losses),
                                curr_step = step,
                                args = args,
