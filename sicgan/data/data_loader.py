@@ -75,7 +75,7 @@ class MeshVoxDataset(Dataset):
                         samples = torch.load(samples_path)
                         self.mid_to_samples[mid] = samples
                     for iid in range(num_imgs):
-                        if allowed_iids is None or iid in allowed_iids:
+                        if allowed_iids is None or str(iid) in allowed_iids:
                             self.synset_ids.append(sid)
                             self.model_ids.append(mid)
                             self.image_ids.append(iid)

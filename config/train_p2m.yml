@@ -1,17 +1,15 @@
 RANDOM_SEED: 0
 
 PHASE: "training"
-EXPERIMENT_NAME: "initial"
+EXPERIMENT_NAME: "pixel2mesh_baseline"
 RESULTS_DIR: "results"
 OVERFIT: False
 
-SHAPENET_DATA:
-    PATH: "/scratch/jiadeng_root/jiadeng/shared_data/datasets/ShapeNetCore.v1/"
     
 SOLVER: 
     LR_SCHEDULER_NAME: "constant"  # {'constant', 'cosine'}
     BATCH_SIZE: 8
-    BATCH_SIZE_EVAL: 8
+    BATCH_SIZE_EVAL: 16
     NUM_EPOCHS: 25
     BASE_LR: 0.001
     OPTIMIZER: "adam"  # {'sgd', 'adam'}
@@ -37,3 +35,4 @@ G:
         CHAMFER_LOSS_WEIGHT: 1.0
         NORMAL_LOSS_WEIGHT: 1.0
         EDGE_LOSS_WEIGHT: 1.0
+
