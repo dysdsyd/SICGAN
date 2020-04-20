@@ -139,14 +139,11 @@ if __name__ == "__main__":
             if _C.OVERFIT:
                 if step%10==0:
                     break
-
-        print("===> Epoch[{}]: Loss_G: {:.4f}".format(epoch, torch.mean(trn_losses)))
-        tb.add_scalar('data/Training_loss', torch.mean(trn_losses), epoch)
         
         # ----------------------------------------------------------------------------------------
         #   VALIDATION
         # ----------------------------------------------------------------------------------------
-        model.eval()
+        G.eval()
         print("\n\n\tEvaluating..")
         for i, data in enumerate(tqdm(val_dataloader), 0):
             imgs = data[0].cuda()
@@ -156,13 +153,18 @@ if __name__ == "__main__":
                 meshes_G = G(imgs)
                 val_loss, _ = mesh_loss(meshes_G, meshes)
             val_losses.append(val_loss.item())
-            
-        print("===> Epoch[{}]: Valid Loss_G: {:.4f}".format(epoch, torch.mean(val_losses)))
-        tb.add_scalar('data/Validation_Loss', torch.mean(val_losses), epoch)
+            if _C.OVERFIT:
+                break
         
-        if (torch.mean(val_losses) <= best_val_loss):
-            best_val_loss = torch.mean(val_losses) 
-            torch.save(G.state_dict(), _C.CKP.experiment_path + 'p2m.pth')
+        print("===> Epoch[{}]: Loss_G: {:.4f}".format(epoch, np.mean(trn_losses)))
+        tb.add_scalar('data/Training_loss', np.mean(trn_losses), epoch)    
+        print("===> Epoch[{}]: Valid Loss_G: {:.4f}".format(epoch, np.mean(val_losses)))
+        tb.add_scalar('data/Validation_Loss', np.mean(val_losses), epoch)
+        
+        if (np.mean(val_losses) <= best_val_loss):
+            best_val_loss = np.mean(val_losses) 
+            torch.save(G.state_dict(), os.path.join(_C.CKP.experiment_path,'p2m.pth'))
+        print('Best Loss: ', best_val_loss)
     
 #         args = save_checkpoint(G = G,
 #                                D = D,

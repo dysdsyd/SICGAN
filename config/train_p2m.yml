@@ -8,8 +8,8 @@ OVERFIT: False
     
 SOLVER: 
     LR_SCHEDULER_NAME: "constant"  # {'constant', 'cosine'}
-    BATCH_SIZE: 8
-    BATCH_SIZE_EVAL: 16
+    BATCH_SIZE: 64
+    BATCH_SIZE_EVAL: 64
     NUM_EPOCHS: 25
     BASE_LR: 0.001
     OPTIMIZER: "adam"  # {'sgd', 'adam'}
