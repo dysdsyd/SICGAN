@@ -8,10 +8,10 @@ OVERFIT: False
     
 SOLVER: 
     LR_SCHEDULER_NAME: "constant"  # {'constant', 'cosine'}
-    BATCH_SIZE: 64
-    BATCH_SIZE_EVAL: 64
+    BATCH_SIZE: 32
+    BATCH_SIZE_EVAL: 32
     NUM_EPOCHS: 25
-    BASE_LR: 0.001
+    BASE_LR: 0.0001
     OPTIMIZER: "adam"  # {'sgd', 'adam'}
     MOMENTUM: 0.9
     WARMUP_ITERS: 500
@@ -33,6 +33,7 @@ G:
         GT_NUM_SAMPLES: 5000
         PRED_NUM_SAMPLES: 5000
         CHAMFER_LOSS_WEIGHT: 1.0
-        NORMAL_LOSS_WEIGHT: 1.0
-        EDGE_LOSS_WEIGHT: 1.0
+        NORMAL_LOSS_WEIGHT: 0.0
+        EDGE_LOSS_WEIGHT: 0.2
+        ICO_SPHERE_LEVEL: 2.0
 
