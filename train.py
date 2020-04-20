@@ -11,7 +11,7 @@ from torch import nn, optim
 
 from sicgan.config import Config
 from sicgan.models import Pixel2MeshHead
-from sicgan.models import GraphConvClf
+from sicgan.models import GraphConvClf, MeshEncoder
 from sicgan.models import encoder_head
 from sicgan.data.build_data_loader import build_data_loader
 from sicgan.models import MeshLoss
@@ -87,7 +87,13 @@ if __name__ == "__main__":
     ## Models
     E = encoder_head(_C).cuda()
     G = Pixel2MeshHead(_C).cuda()
-    D = GraphConvClf(_C).cuda()
+    enc = MeshEncoder(50).cuda() 
+    enc.load_state_dict(torch.load('/scratch/jiadeng_root/jiadeng/shared_data/datasets/SICGAN_data/pretrained/encoder'))
+    D = nn.Sequential(enc,
+                      nn.Linear(50,1),
+                      torch.sigmoid()
+                     ).cuda()
+    
     
     # Losses
     loss_fn_kwargs = {
@@ -120,6 +126,7 @@ if __name__ == "__main__":
     # --------------------------------------------------------------------------------------------
     step = 0
     total_step = len(trn_dataloader)
+    best_loss = 100000
     print('\n ***************** Training *****************')
     
     for epoch in range(_C.SOLVER.NUM_EPOCHS):
@@ -198,19 +205,23 @@ if __name__ == "__main__":
             val_losses.append(val_loss.item())
             
             tb.add_scalar('data/Validation_Loss', torch.mean(val_losses), epoch)
-        
-#         # Final save of the model
-        args = save_checkpoint(G = G,
-                               D = D,
-                               E = E,
-                               curr_epoch = epoch,
-                               G_loss = torch.mean(G_losses),
-                               D_loss = torch.mean(D_losses),
-                               E_loss = torch.mean(E_losses),
-                               val_loss = torch.mean(val_losses),
-                               curr_step = step,
-                               args = args,
-                               filename = ('model@epoch%d.pkl' %(epoch)))
+            
+            if torch.mean(val_losses)<best_loss:
+                best_loss = torch.mean(val_losses)
+                torch.save(D.state_dict(),  os.path.join(_C.CKP.experiment_path,'D.pth'))
+                torch.save(G.state_dict(),  os.path.join(_C.CKP.experiment_path,'G.pth'))
+            
+#         args = save_checkpoint(G = G,
+#                                D = D,
+#                                E = E,
+#                                curr_epoch = epoch,
+#                                G_loss = torch.mean(G_losses),
+#                                D_loss = torch.mean(D_losses),
+#                                E_loss = torch.mean(E_losses),
+#                                val_loss = torch.mean(val_losses),
+#                                curr_step = step,
+#                                args = args,
+#                                filename = ('model@epoch%d.pkl' %(epoch)))
           
         print('---------------------------------------------------------------------------------------\n')
     print('Finished Training')
