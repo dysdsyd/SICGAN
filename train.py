@@ -160,25 +160,41 @@ if __name__ == "__main__":
                           clf_loss(D_pos, torch.ones(D_pos.size()).cuda()))
             loss_D.backward(retain_graph=True)
             D_optimizer.step()
-            
-            ## Update E network
-            E_optimizer.zero_grad()
-            z_x,means,sigmas = E(imgs)
-            loss_kl_E = torch.mean(0.5 * torch.sum(torch.exp(sigmas) + means**2 - 1. - sigmas, 1))
-            loss_kl_E.backward()
-            E_optimizer.step()
 
-            ## Update G network
+            #Update E&G Network
+            E_optimizer.zero_grad()
             G_optimizer.zero_grad()
-            meshes_G = G(imgs,z)         # -----Check which z you have to consider here!-------
+            z_x,means,sigmas = E(imgs)
+            meshes_G = G(imgs,z_x)
+            loss_kl_E = torch.mean(0.5 * torch.sum(torch.exp(sigmas) + means**2 - 1. - sigmas, 1))
             recon_loss, _ = mesh_loss(meshes_G, meshes)
             loss_G = recon_loss + clf_loss(D_neg, torch.ones(D_neg.size()).cuda())
-            loss_G.backward()
+            loss_EG = loss_kl_E + loss_G
+            loss_EG.backward()
+            E_optimizer.step()
             G_optimizer.step()
+
+
+            # ## Update G network
+            # G_optimizer.zero_grad()
+            # meshes_G = G(imgs,z)         # -----Check which z you have to consider here!-------
+            # recon_loss, _ = mesh_loss(meshes_G, meshes)
+            # loss_G = 50*recon_loss + clf_loss(D_neg, torch.ones(D_neg.size()).cuda())
+            # loss_G.backward()
+            # G_optimizer.step()
+
+            # ## Update E network
+            # E_optimizer.zero_grad()
+            # z_x,means,sigmas = E(imgs)
+            # loss_kl_E = torch.mean(0.5 * torch.sum(torch.exp(sigmas) + means**2 - 1. - sigmas, 1))
+            # loss_E = loss_kl_E + recon_loss
+            # loss_E.backward()
+            # E_optimizer.step()
             
             D_losses.append(loss_D.item())
             G_losses.append(loss_G.item())
             E_losses.append(loss_kl_E.item())
+            EG_losses.append(loss_EG.item())
             
             if _C.OVERFIT:
                 if step%10==0:
@@ -188,7 +204,7 @@ if __name__ == "__main__":
         tb.add_scalar('data/loss_G_per_epoch', torch.mean(G_losses), epoch)
         tb.add_scalar('data/loss_D_per_epoch', torch.mean(D_losses), epoch)
         tb.add_scalar('data/loss_E_per_epoch', torch.mean(E_losses), epoch)
-        
+        tb.add_scalar('data/loss_EG_per_epoch', torch.mean(EG_losses), epoch)
         # ----------------------------------------------------------------------------------------
         #   VALIDATION
         # ----------------------------------------------------------------------------------------
@@ -200,7 +216,8 @@ if __name__ == "__main__":
             
             
             with torch.no_grad():
-                meshes_G = G(imgs,z) # -----Check which z you have to consider here!-------
+                z_v,_,_ = E(imgs)
+                meshes_G = G(imgs,z_v) # -----Check which z you have to consider here!-------
                 val_loss, _ = mesh_loss(meshes_G, meshes)
             val_losses.append(val_loss.item())
             
@@ -210,6 +227,7 @@ if __name__ == "__main__":
                 best_loss = torch.mean(val_losses)
                 torch.save(D.state_dict(),  os.path.join(_C.CKP.experiment_path,'D.pth'))
                 torch.save(G.state_dict(),  os.path.join(_C.CKP.experiment_path,'G.pth'))
+                torch.save(E.state_dict(),  os.path.join(_C.CKP.experiment_path,'E.pth'))
             
 #         args = save_checkpoint(G = G,
 #                                D = D,
