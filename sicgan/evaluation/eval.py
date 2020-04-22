@@ -22,19 +22,8 @@ def evaluate_test(model, data_loader, vis_preds=False):
     device = torch.device("cuda:0")
     # evaluation
     class_names = {
-        "02828884": "bench",
         "03001627": "chair",
-        "03636649": "lamp",
-        "03691459": "speaker",
-        "04090263": "firearm",
         "04379243": "table",
-        "04530566": "watercraft",
-        "02691156": "plane",
-        "02933112": "cabinet",
-        "02958343": "car",
-        "03211117": "monitor",
-        "04256520": "couch",
-        "04401088": "cellphone",
     }
 
     num_instances = {i: 0 for i in class_names}
@@ -90,21 +79,9 @@ def evaluate_test_p2m(model, data_loader):
     """
     # assert comm.is_main_process()
     device = torch.device("cuda:0")
-    # evaluation
     class_names = {
-        "02828884": "bench",
         "03001627": "chair",
-        "03636649": "lamp",
-        "03691459": "speaker",
-        "04090263": "firearm",
         "04379243": "table",
-        "04530566": "watercraft",
-        "02691156": "plane",
-        "02933112": "cabinet",
-        "02958343": "car",
-        "03211117": "monitor",
-        "04256520": "couch",
-        "04401088": "cellphone",
     }
 
     num_instances = {i: 0 for i in class_names}

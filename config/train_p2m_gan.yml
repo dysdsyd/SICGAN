@@ -1,0 +1,45 @@
+RANDOM_SEED: 0
+
+PHASE: "training"
+EXPERIMENT_NAME: "p2m_gan_run"
+RESULTS_DIR: "results"
+OVERFIT: False
+
+SHAPENET_DATA:
+    PATH: "/scratch/jiadeng_root/jiadeng/shared_data/datasets/ShapeNetCore.v1/"
+    
+SOLVER: 
+    LR_SCHEDULER_NAME: "constant"  # {'constant', 'cosine'}
+    BATCH_SIZE: 32
+    BATCH_SIZE_EVAL: 32
+    NUM_EPOCHS: 125
+    BASE_LR: 0.001
+    OPTIMIZER: "adam"  # {'sgd', 'adam'}
+    MOMENTUM: 0.9
+    WARMUP_ITERS: 500
+    WARMUP_FACTOR: 0.1
+    CHECKPOINT_PERIOD: 24949  # in iters
+    LOGGING_PERIOD: 50  # in iters
+    SKIP_LOSS_THRESH: 50.0
+    LOSS_SKIP_GAMMA: 0.9
+    
+
+G:
+    BACKBONE: "resnet50"
+    MESH_HEAD:
+        NAME: "Pixel2MeshHead"
+        NUM_STAGES: 3
+        NUM_GRAPH_CONVS: 3
+        GRAPH_CONV_DIM: 128
+        GRAPH_CONV_INIT: "normal"
+        GT_NUM_SAMPLES: 5000
+        PRED_NUM_SAMPLES: 5000
+        CHAMFER_LOSS_WEIGHT: 1.0
+        NORMAL_LOSS_WEIGHT: 0.0
+        EDGE_LOSS_WEIGHT: 0.2
+        ICO_SPHERE_LEVEL: 2.0
+D:
+    INPUT_MESH_FEATS: 3
+    HIDDEN_DIMS: [16, 32, 64]
+    CLASSES: 1
+    CONV_INIT: "normal"

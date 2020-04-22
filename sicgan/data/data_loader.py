@@ -15,6 +15,33 @@ from .utils import imagenet_preprocess, project_verts
 logger = logging.getLogger(__name__)
 
 
+# normalizes symetric, binary adj matrix such that sum of each row is 1 
+def normalize_adj(mx):
+    rowsum = mx.sum(1)
+    r_inv = (1./rowsum).view(-1)
+    r_inv[r_inv != r_inv] = 0.
+    mx = torch.mm(torch.eye(r_inv.shape[0]).to(mx.device)*r_inv, mx)
+    return mx
+
+def calc_adj(faces): 
+    v1 = faces[:, 0]
+    v2 = faces[:, 1]
+    v3 = faces[:, 2]
+    num_verts = int(faces.max())
+    adj = torch.eye(num_verts+1).to(faces.device)
+
+    adj[(v1, v2)] = 1 
+    adj[(v1, v3)] = 1 
+
+    adj[(v2, v1)] = 1
+    adj[(v2, v3)] = 1 
+
+    adj[(v3, v1)] = 1
+    adj[(v3, v2)] = 1 
+
+    return adj
+ 
+
 class MeshVoxDataset(Dataset):
     def __init__(
         self,

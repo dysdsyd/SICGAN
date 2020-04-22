@@ -109,15 +109,20 @@ class MeshRefinementStage(nn.Module):
         vert_pos_padded = vert_pos_padded * factor
         # Get features from the image
         vert_align_feats = vert_align(img_feats, vert_pos_padded)
+        print(vert_align_feats.shape)
 
         vert_align_feats = _padded_to_packed(vert_align_feats, verts_padded_to_packed_idx)
         vert_align_feats = F.relu(self.bottleneck(vert_align_feats))
 
         # Prepare features for first graph conv layer
         # Append latent vector z
-        first_layer_feats = [vert_align_feats, vert_pos_packed,z]   
+        first_layer_feats = [vert_align_feats, vert_pos_packed]   
         if vert_feats is not None:
             first_layer_feats.append(vert_feats)
+        if z is not None:
+            first_layer_feats.append(z)
+        for i in first_layer_feats:
+            print(i.shape)
         vert_feats = torch.cat(first_layer_feats, dim=1)
 
         # Run graph conv layers
