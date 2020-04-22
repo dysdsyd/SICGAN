@@ -85,7 +85,7 @@ if __name__ == "__main__":
     
     
     ## Models
-    E = encoder_head(_C).cuda()
+    # E = encoder_head(_C).cuda()
     G = Pixel2MeshHead(_C).cuda()
     D = GraphConvClf(_C).cuda()
     
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     clf_loss = nn.BCELoss().cuda()
     
     ## Optimizers
-    E_optimizer = torch.optim.Adam(E.parameters(), lr= 0.02, betas=(0.5, 0.999))
+    # E_optimizer = torch.optim.Adam(E.parameters(), lr= 0.02, betas=(0.5, 0.999))
     G_optimizer = torch.optim.Adam(G.parameters(), lr= 0.002, betas=(0.5, 0.999))
     D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.02, betas=(0.5, 0.999))
     
@@ -122,15 +122,15 @@ if __name__ == "__main__":
         # --------------------------------------------------------------------------------------------
         #   TRAINING 
         # --------------------------------------------------------------------------------------------
-        E_losses = []
+        # E_losses = []
         D_losses = []
         G_losses = []
-        EG_losses = []
+        # EG_losses = []
         trn_losses = []
         val_losses = []
         print('Epoch: '+str(epoch))
         
-        E.train()
+        # E.train()
         G.train()
         D.train()
     
@@ -140,8 +140,9 @@ if __name__ == "__main__":
             meshes = data[1].cuda()
         
             
-            z, means, sigmas = E(imgs)
-            print(z)
+            # z, means, sigmas = E(imgs)
+            # print(z)
+            z = torch.randn((imgs.shape[0],200)).cuda()
             meshes_G = G(imgs,z)
             
             D_optimizer.zero_grad()
@@ -160,22 +161,22 @@ if __name__ == "__main__":
             D_optimizer.step()
 
             #Update E&G Network
-            E_optimizer.zero_grad()
+            # E_optimizer.zero_grad()
             G_optimizer.zero_grad()
 
-            loss_kl_E = torch.mean(0.5 * torch.sum(torch.exp(sigmas) + means**2 - 1. - sigmas, 1))
+            # loss_kl_E = torch.mean(0.5 * torch.sum(torch.exp(sigmas) + means**2 - 1. - sigmas, 1))
             recon_loss, _ = mesh_loss(meshes_G, meshes)
             loss_G = recon_loss + clf_loss(D_neg, torch.ones(D_neg.size()).cuda())
-            loss_EG = loss_kl_E + loss_G
-            loss_EG.backward()
-            E_optimizer.step()
+            # loss_EG = loss_kl_E + loss_G
+            loss_G.backward()
+            # E_optimizer.step()
             G_optimizer.step()
 
             
             D_losses.append(loss_D.item())
             G_losses.append(loss_G.item())
-            E_losses.append(loss_kl_E.item())
-            EG_losses.append(loss_EG.item())
+            # E_losses.append(loss_kl_E.item())
+            # EG_losses.append(loss_EG.item())
             trn_losses.append(recon_loss.item())
             
             
@@ -188,7 +189,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------
         D.eval()
         G.eval()
-        E.eval()
+        # E.eval()
         print("\n\n\tEvaluating..")
         for i, data in enumerate(tqdm(val_dataloader), 0):
             imgs = data[0].cuda()
@@ -196,7 +197,8 @@ if __name__ == "__main__":
             
             
             with torch.no_grad():
-                z_v,_,_ = E(imgs)
+                # z_v,_,_ = E(imgs)
+                z_v = torch.randn((imgs.shape[0],200)).cuda()
                 meshes_G = G(imgs,z_v) # -----Check which z you have to consider here!-------
                 val_loss, _ = mesh_loss(meshes_G, meshes)
             val_losses.append(val_loss.item())
@@ -204,10 +206,10 @@ if __name__ == "__main__":
             
             
             
-        print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f} Loss_E: {:.4f} Loss_Recon: {:.4f}".format(epoch, np.mean(D_losses), np.mean(G_losses), np.mean(E_losses), np.mean(trn_losses)))
+        print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f} Loss_Recon: {:.4f}".format(epoch, np.mean(D_losses), np.mean(G_losses), np.mean(trn_losses)))
         tb.add_scalar('data/loss_G', np.mean(G_losses), epoch)
         tb.add_scalar('data/loss_D', np.mean(D_losses), epoch)
-        tb.add_scalar('data/loss_E', np.mean(E_losses), epoch)
+        # tb.add_scalar('data/loss_E', np.mean(E_losses), epoch)
         tb.add_scalar('data/Training_loss', np.mean(trn_losses), epoch) 
         tb.add_scalar('data/Validation_Loss',  np.mean(val_losses), epoch)
             
@@ -215,7 +217,7 @@ if __name__ == "__main__":
             best_loss = np.mean(val_losses)
             torch.save(D.state_dict(),  os.path.join(_C.CKP.experiment_path,'D.pth'))
             torch.save(G.state_dict(),  os.path.join(_C.CKP.experiment_path,'G.pth'))
-            torch.save(E.state_dict(),  os.path.join(_C.CKP.experiment_path,'E.pth'))
+            # torch.save(E.state_dict(),  os.path.join(_C.CKP.experiment_path,'E.pth'))
           
         print('---------------------------------------------------------------------------------------\n')
     print('Finished Training')

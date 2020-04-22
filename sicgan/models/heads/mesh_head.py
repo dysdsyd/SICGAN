@@ -63,7 +63,7 @@ class MeshRefinementStage(nn.Module):
         """
         super(MeshRefinementStage, self).__init__()
 
-        self.bottleneck = nn.Linear(img_feat_dim, hidden_dim)
+        self.bottleneck = nn.Linear(img_feat_dim+200, hidden_dim)
 
         self.vert_offset = nn.Linear(hidden_dim + 3, 3)
 
@@ -109,13 +109,15 @@ class MeshRefinementStage(nn.Module):
         vert_pos_padded = vert_pos_padded * factor
         # Get features from the image
         vert_align_feats = vert_align(img_feats, vert_pos_padded)
-        print('Pre_concat',vert_align_feats.shape)
+        # print('Pre_concat',vert_align_feats.shape)
+        # print('Z',z.shape)
         if z is not None:
             V = vert_align_feats.shape[1]
-            z = z.repeat(1,V,1)
+            z = z[:,None,:].repeat(1,V,1)
+            # print(z.shape)
             vert_align_feats = torch.cat((vert_align_feats,z),dim=2)
 
-        print('Post_concat',vert_align_feats.shape)
+        # print('Post_concat',vert_align_feats.shape)
 
         vert_align_feats = _padded_to_packed(vert_align_feats, verts_padded_to_packed_idx)
         vert_align_feats = F.relu(self.bottleneck(vert_align_feats))
@@ -125,8 +127,8 @@ class MeshRefinementStage(nn.Module):
         first_layer_feats = [vert_align_feats, vert_pos_packed]   
         if vert_feats is not None:
             first_layer_feats.append(vert_feats)
-        for i in first_layer_feats:
-            print(i.shape)
+        # for i in first_layer_feats:
+            # print(i.shape)
         vert_feats = torch.cat(first_layer_feats, dim=1)
 
         # Run graph conv layers

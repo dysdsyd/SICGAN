@@ -16,5 +16,7 @@ class encoder_head(nn.Module):
 
     def forward(self,imgs):
         means,sigmas = self.vae_encoder(imgs)
+        print('Mean',means)
+        print('Sigma',sigmas)
         z_x = self.sample_z(means,sigmas)
         return z_x,means,sigmas

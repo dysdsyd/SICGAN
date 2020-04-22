@@ -10,7 +10,7 @@ class Flatten(nn.Module):
         return flatten(x)
 
 class vae_encoder_head(nn.Module):
-    def __init__(self,cfg,init_weights=True):
+    def __init__(self,cfg,init_weights=False):
         super(vae_encoder_head,self).__init__()
 
         # self.in_features = 3
