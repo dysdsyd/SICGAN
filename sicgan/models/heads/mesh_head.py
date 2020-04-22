@@ -25,7 +25,7 @@ class MeshRefinementHead(nn.Module):
             )
             self.stages.append(stage)
 
-    def forward(self, img_feats, meshes, P=None, subdivide=False):
+    def forward(self, img_feats, z, meshes, P=None, subdivide=False):
         """
         Args:
           img_feats (tensor): Tensor of shape (N, C, H, W) giving image features,
@@ -34,6 +34,7 @@ class MeshRefinementHead(nn.Module):
           P (tensor): Tensor of shape (N, 4, 4) giving projection matrix to be applied
                       to vertex positions before vert-align. If None, don't project verts.
           subdivide (bool): Flag whether to subdivice the mesh after refinement
+          z : Latent vector sampled from distribution P(Z|X) modelled by the encoder
         Returns:
           output_meshes (list of Meshes): A list with S Meshes, where S is the
                                           number of refinement stages
@@ -41,7 +42,7 @@ class MeshRefinementHead(nn.Module):
         output_meshes = []
         vert_feats = None
         for i, stage in enumerate(self.stages):
-            meshes, vert_feats = stage(img_feats, meshes, vert_feats, P)
+            meshes, vert_feats = stage(img_feats, z, meshes, vert_feats, P)
             output_meshes.append(meshes)
             if subdivide and i < self.num_stages - 1:
                 subdivide = SubdivideMeshes()
@@ -62,7 +63,7 @@ class MeshRefinementStage(nn.Module):
         """
         super(MeshRefinementStage, self).__init__()
 
-        self.bottleneck = nn.Linear(img_feat_dim, hidden_dim)
+        self.bottleneck = nn.Linear(img_feat_dim+200, hidden_dim)
 
         self.vert_offset = nn.Linear(hidden_dim + 3, 3)
 
@@ -82,7 +83,7 @@ class MeshRefinementStage(nn.Module):
         nn.init.zeros_(self.vert_offset.weight)
         nn.init.constant_(self.vert_offset.bias, 0)
 
-    def forward(self, img_feats, meshes, vert_feats=None, P=None):
+    def forward(self, img_feats, z, meshes, vert_feats=None, P=None):
         """
         Args:
           img_feats (tensor): Features from the backbone
@@ -90,6 +91,7 @@ class MeshRefinementStage(nn.Module):
           vert_feats (tensor): Features from the previous refinement stage
           P (tensor): Tensor of shape (N, 4, 4) giving projection matrix to be applied
                       to vertex positions before vert-align. If None, don't project verts.
+          z : Latent vector sampled from distribution P(Z|X) modelled by the encoder
         """
         # Project verts if we are making predictions in world space
         verts_padded_to_packed_idx = meshes.verts_padded_to_packed_idx()
@@ -107,13 +109,26 @@ class MeshRefinementStage(nn.Module):
         vert_pos_padded = vert_pos_padded * factor
         # Get features from the image
         vert_align_feats = vert_align(img_feats, vert_pos_padded)
+        # print('Pre_concat',vert_align_feats.shape)
+        # print('Z',z.shape)
+        if z is not None:
+            V = vert_align_feats.shape[1]
+            z = z[:,None,:].repeat(1,V,1)
+            # print(z.shape)
+            vert_align_feats = torch.cat((vert_align_feats,z),dim=2)
+
+        # print('Post_concat',vert_align_feats.shape)
+
         vert_align_feats = _padded_to_packed(vert_align_feats, verts_padded_to_packed_idx)
         vert_align_feats = F.relu(self.bottleneck(vert_align_feats))
 
         # Prepare features for first graph conv layer
-        first_layer_feats = [vert_align_feats, vert_pos_packed]
+        # Append latent vector z
+        first_layer_feats = [vert_align_feats, vert_pos_packed]   
         if vert_feats is not None:
             first_layer_feats.append(vert_feats)
+        # for i in first_layer_feats:
+            # print(i.shape)
         vert_feats = torch.cat(first_layer_feats, dim=1)
 
         # Run graph conv layers

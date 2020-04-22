@@ -12,11 +12,11 @@ from torch import nn, optim
 from sicgan.config import Config
 from sicgan.models import Pixel2MeshHead
 from sicgan.models import GraphConvClf, MeshEncoder
-from sicgan.models import encoder_head
 from sicgan.data.build_data_loader import build_data_loader
 from sicgan.models import MeshLoss
 from sicgan.utils.torch_utils import save_checkpoint
 from torch.utils.tensorboard import SummaryWriter
+from torch.autograd import Variable
 
 
 import warnings
@@ -73,6 +73,8 @@ if __name__ == "__main__":
     device = torch.device("cuda:0")
     _C.DEVICE = device
     
+        
+    
     # --------------------------------------------------------------------------------------------
     #   INSTANTIATE DATALOADER, MODEL, OPTIMIZER & CRITERION
     # --------------------------------------------------------------------------------------------
@@ -85,16 +87,14 @@ if __name__ == "__main__":
     
     
     ## Models
-    E = encoder_head(_C).cuda()
     G = Pixel2MeshHead(_C).cuda()
-    enc = MeshEncoder(50).cuda() 
-    enc.load_state_dict(torch.load('/scratch/jiadeng_root/jiadeng/shared_data/datasets/SICGAN_data/pretrained/encoder'))
-    D = nn.Sequential(enc,
-                      nn.Linear(50,1),
-                      torch.sigmoid()
-                     ).cuda()
-    
-    
+    D = GraphConvClf(_C).cuda()
+#     enc = MeshEncoder(50).cuda() 
+#     enc.load_state_dict(torch.load('/scratch/jiadeng_root/jiadeng/shared_data/datasets/SICGAN_data/pretrained/encoder'))
+#     D = nn.Sequential(enc,
+#                       nn.Linear(50,1),
+#                       nn.Sigmoid()
+#                      ).cuda()    
     # Losses
     loss_fn_kwargs = {
         "chamfer_weight": _C.G.MESH_HEAD.CHAMFER_LOSS_WEIGHT,
@@ -108,38 +108,30 @@ if __name__ == "__main__":
     clf_loss = nn.BCELoss().cuda()
     
     ## Optimizers
-    E_optimizer = torch.optim.Adam(E.parameters(), lr= 0.0002, betas=(0.5, 0.999))
-    G_optimizer = torch.optim.Adam(G.parameters(), lr= 0.0002, betas=(0.5, 0.999))
-    D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.0002, betas=(0.5, 0.999))
+    G_optimizer = torch.optim.Adam(G.parameters(), lr= 0.001, betas=(0.5, 0.999))
+    D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.01, betas=(0.5, 0.999))
     
     ## Tensorboard
-    tb = SummaryWriter(os.path.join(_C.CKP.experiment_path,'tensorboard')) 
-
-    args  = {}
-    args['EXPERIMENT_NAME'] =  _C.EXPERIMENT_NAME
-    args['full_experiment_name'] = _C.CKP.full_experiment_name
-    args['experiment_path'] = _C.CKP.experiment_path
-    args['best_recon_loss'] = _C.CKP.best_loss
+    tb = SummaryWriter(os.path.join('tensorboard/', _C.CKP.full_experiment_name)) 
     
     # --------------------------------------------------------------------------------------------
     #   TRAINING LOOP
     # --------------------------------------------------------------------------------------------
     step = 0
     total_step = len(trn_dataloader)
-    best_loss = 100000
+    best_val_loss = 1000
     print('\n ***************** Training *****************')
     
     for epoch in range(_C.SOLVER.NUM_EPOCHS):
         # --------------------------------------------------------------------------------------------
         #   TRAINING 
         # --------------------------------------------------------------------------------------------
-        E_losses = []
         D_losses = []
         G_losses = []
+        trn_losses = []
         val_losses = []
         print('Epoch: '+str(epoch))
         
-        E.train()
         G.train()
         D.train()
     
@@ -147,68 +139,45 @@ if __name__ == "__main__":
             step += 1
             imgs = data[0].cuda()
             meshes = data[1].cuda()
+            
+            meshes_G = G(imgs, z=None)
         
             ## Update D network
-            with torch.no_grad():
-                z,_,_ = E(imgs)
-                meshes_G = G(imgs,z)
             D_optimizer.zero_grad()
-            D_neg = D(meshes_G)
+            with torch.no_grad():
+                D_neg = D(meshes_G)  
             D_pos = D(meshes)
             
-            loss_D = 0.5*(clf_loss(D_neg, torch.zeros(D_neg.size()).cuda()) + 
-                          clf_loss(D_pos, torch.ones(D_pos.size()).cuda()))
+            
+            loss_D = 0.5*(clf_loss(D_neg, Variable(torch.zeros(D_neg.size()).cuda())) + 
+                          clf_loss(D_pos, Variable(torch.ones(D_pos.size()).cuda())))
             loss_D.backward(retain_graph=True)
             D_optimizer.step()
-
-            #Update E&G Network
-            E_optimizer.zero_grad()
-            G_optimizer.zero_grad()
-            z_x,means,sigmas = E(imgs)
-            meshes_G = G(imgs,z_x)
-            loss_kl_E = torch.mean(0.5 * torch.sum(torch.exp(sigmas) + means**2 - 1. - sigmas, 1))
-            recon_loss, _ = mesh_loss(meshes_G, meshes)
-            loss_G = recon_loss + clf_loss(D_neg, torch.ones(D_neg.size()).cuda())
-            loss_EG = loss_kl_E + loss_G
-            loss_EG.backward()
-            E_optimizer.step()
-            G_optimizer.step()
-
-
-            # ## Update G network
-            # G_optimizer.zero_grad()
-            # meshes_G = G(imgs,z)         # -----Check which z you have to consider here!-------
-            # recon_loss, _ = mesh_loss(meshes_G, meshes)
-            # loss_G = 50*recon_loss + clf_loss(D_neg, torch.ones(D_neg.size()).cuda())
-            # loss_G.backward()
-            # G_optimizer.step()
-
-            # ## Update E network
-            # E_optimizer.zero_grad()
-            # z_x,means,sigmas = E(imgs)
-            # loss_kl_E = torch.mean(0.5 * torch.sum(torch.exp(sigmas) + means**2 - 1. - sigmas, 1))
-            # loss_E = loss_kl_E + recon_loss
-            # loss_E.backward()
-            # E_optimizer.step()
             
+            ## Update G network
+            G_optimizer.zero_grad()
+            recon_loss, _ = mesh_loss(meshes_G, meshes)
+            
+            D_neg = D(meshes_G)  
+    
+            loss_G = recon_loss + clf_loss(D_neg, Variable(torch.ones(D_neg.size()).cuda()))
+            loss_G.backward()
+            G_optimizer.step()
+            
+            trn_losses.append(recon_loss.item())
             D_losses.append(loss_D.item())
             G_losses.append(loss_G.item())
-            E_losses.append(loss_kl_E.item())
-            EG_losses.append(loss_EG.item())
+            
             
             if _C.OVERFIT:
-                if step%10==0:
+                if step%3==0:
                     break
-
-        print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f} Loss_E: {:.4f}".format(epoch, torch.mean(D_losses), torch.mean(G_losses), torch.mean(E_losses)))
-        tb.add_scalar('data/loss_G_per_epoch', torch.mean(G_losses), epoch)
-        tb.add_scalar('data/loss_D_per_epoch', torch.mean(D_losses), epoch)
-        tb.add_scalar('data/loss_E_per_epoch', torch.mean(E_losses), epoch)
-        tb.add_scalar('data/loss_EG_per_epoch', torch.mean(EG_losses), epoch)
+        
         # ----------------------------------------------------------------------------------------
         #   VALIDATION
         # ----------------------------------------------------------------------------------------
-        model.eval()
+        G.eval()
+        D.eval()
         print("\n\n\tEvaluating..")
         for i, data in enumerate(tqdm(val_dataloader), 0):
             imgs = data[0].cuda()
@@ -216,31 +185,32 @@ if __name__ == "__main__":
             
             
             with torch.no_grad():
-                z_v,_,_ = E(imgs)
-                meshes_G = G(imgs,z_v) # -----Check which z you have to consider here!-------
+                meshes_G = G(imgs, z=None)
                 val_loss, _ = mesh_loss(meshes_G, meshes)
             val_losses.append(val_loss.item())
-            
-            tb.add_scalar('data/Validation_Loss', torch.mean(val_losses), epoch)
-            
-            if torch.mean(val_losses)<best_loss:
-                best_loss = torch.mean(val_losses)
-                torch.save(D.state_dict(),  os.path.join(_C.CKP.experiment_path,'D.pth'))
-                torch.save(G.state_dict(),  os.path.join(_C.CKP.experiment_path,'G.pth'))
-                torch.save(E.state_dict(),  os.path.join(_C.CKP.experiment_path,'E.pth'))
-            
-#         args = save_checkpoint(G = G,
-#                                D = D,
-#                                E = E,
-#                                curr_epoch = epoch,
-#                                G_loss = torch.mean(G_losses),
-#                                D_loss = torch.mean(D_losses),
-#                                E_loss = torch.mean(E_losses),
-#                                val_loss = torch.mean(val_losses),
-#                                curr_step = step,
-#                                args = args,
-#                                filename = ('model@epoch%d.pkl' %(epoch)))
-          
+            if _C.OVERFIT:
+                if step%3==0:
+                    break
+
+        # Print Summary and update tensorboard
+        print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f} Loss_Recon: {:.4f}".format(epoch, np.mean(D_losses), np.mean(G_losses), np.mean(trn_losses)))
+        print("===> Epoch[{}]: Valid Loss: {:.4f}".format(epoch, np.mean(val_losses)))
+        tb.add_scalar('data/Loss_G', np.mean(G_losses), epoch)
+        tb.add_scalar('data/loss_D', np.mean(D_losses), epoch)
+        tb.add_scalar('data/Training_loss', np.mean(trn_losses), epoch) 
+        tb.add_scalar('data/Validation_Loss',  np.mean(val_losses), epoch)
+        
+        if (np.mean(val_losses) <= best_val_loss):
+            best_val_loss = np.mean(val_losses) 
+            torch.save(G.state_dict(), os.path.join(_C.CKP.experiment_path,'G.pth'))
+            torch.save(D.state_dict(), os.path.join(_C.CKP.experiment_path,'D.pth'))
+        print('Best Loss: ', best_val_loss)
+        
+        if _C.OVERFIT:
+            if epoch == 2:
+                break
+
+
         print('---------------------------------------------------------------------------------------\n')
     print('Finished Training')
     tb.close() 

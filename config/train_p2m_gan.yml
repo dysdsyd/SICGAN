@@ -1,7 +1,7 @@
 RANDOM_SEED: 0
 
 PHASE: "training"
-EXPERIMENT_NAME: "initial"
+EXPERIMENT_NAME: "p2m_gan_run"
 RESULTS_DIR: "results"
 OVERFIT: False
 
@@ -12,8 +12,8 @@ SOLVER:
     LR_SCHEDULER_NAME: "constant"  # {'constant', 'cosine'}
     BATCH_SIZE: 32
     BATCH_SIZE_EVAL: 32
-    NUM_EPOCHS: 25
-    BASE_LR: 0.0001
+    NUM_EPOCHS: 125
+    BASE_LR: 0.001
     OPTIMIZER: "adam"  # {'sgd', 'adam'}
     MOMENTUM: 0.9
     WARMUP_ITERS: 500
@@ -40,6 +40,6 @@ G:
         ICO_SPHERE_LEVEL: 2.0
 D:
     INPUT_MESH_FEATS: 3
-    HIDDEN_DIMS: [128, 256, 512]
+    HIDDEN_DIMS: [16, 32, 64]
     CLASSES: 1
     CONV_INIT: "normal"
