@@ -71,8 +71,8 @@ class MeshVoxDataset(Dataset):
         self.image_ids = []
         self.mid_to_samples = {}
 
-        transform = [T.Resize((192,256))]
-        transform.append(T.ToTensor())
+#         transform = [T.Resize((192,256))]
+        transform = [T.ToTensor()]
         if normalize_images:
             transform.append(imagenet_preprocess())   # Change this to r2n2 params
         self.transform = T.Compose(transform)
