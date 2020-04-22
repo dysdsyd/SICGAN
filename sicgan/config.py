@@ -86,7 +86,7 @@ class Config(object):
         self._C.G.MESH_HEAD.CHAMFER_LOSS_WEIGHT = 1.0
         self._C.G.MESH_HEAD.NORMAL_LOSS_WEIGHT = 1.0
         self._C.G.MESH_HEAD.EDGE_LOSS_WEIGHT = 1.0
-        self._C.G.MESH_HEAD.ICO_SPHERE_LEVEL = 1.0
+        self._C.G.MESH_HEAD.ICO_SPHERE_LEVEL = -1
         
         
         self._C.D = CN()

@@ -44,8 +44,8 @@ class MeshVoxDataset(Dataset):
         self.image_ids = []
         self.mid_to_samples = {}
 
-        transform = [T.Resize((192,256))]
-        transform.append(T.ToTensor())
+#         transform = [T.Resize((192,256))]
+        transform = [T.ToTensor()]
         if normalize_images:
             transform.append(imagenet_preprocess())   # Change this to r2n2 params
         self.transform = T.Compose(transform)
@@ -75,7 +75,7 @@ class MeshVoxDataset(Dataset):
                         samples = torch.load(samples_path)
                         self.mid_to_samples[mid] = samples
                     for iid in range(num_imgs):
-                        if allowed_iids is None or str(iid) in allowed_iids:
+                        if allowed_iids is None or iid in allowed_iids:
                             self.synset_ids.append(sid)
                             self.model_ids.append(mid)
                             self.image_ids.append(iid)

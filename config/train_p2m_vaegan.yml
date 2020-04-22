@@ -1,17 +1,19 @@
 RANDOM_SEED: 0
 
 PHASE: "training"
-EXPERIMENT_NAME: "pixel2mesh_baseline_run2"
+EXPERIMENT_NAME: "p2m_vaegan_of"
 RESULTS_DIR: "results"
-OVERFIT: False
+OVERFIT: True
 
+SHAPENET_DATA:
+    PATH: "/scratch/jiadeng_root/jiadeng/shared_data/datasets/ShapeNetCore.v1/"
     
 SOLVER: 
     LR_SCHEDULER_NAME: "constant"  # {'constant', 'cosine'}
     BATCH_SIZE: 32
-    BATCH_SIZE_EVAL: 1
-    NUM_EPOCHS: 25
-    BASE_LR: 0.0001
+    BATCH_SIZE_EVAL: 32
+    NUM_EPOCHS: 125
+    BASE_LR: 0.001
     OPTIMIZER: "adam"  # {'sgd', 'adam'}
     MOMENTUM: 0.9
     WARMUP_ITERS: 500
@@ -35,5 +37,9 @@ G:
         CHAMFER_LOSS_WEIGHT: 1.0
         NORMAL_LOSS_WEIGHT: 0.0
         EDGE_LOSS_WEIGHT: 0.2
-        ICO_SPHERE_LEVEL: 2
-
+        ICO_SPHERE_LEVEL: 2.0
+D:
+    INPUT_MESH_FEATS: 3
+    HIDDEN_DIMS: [16, 32, 64]
+    CLASSES: 1
+    CONV_INIT: "normal"
