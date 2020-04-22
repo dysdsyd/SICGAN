@@ -56,16 +56,6 @@ class Config(object):
         
 
         #REMOVE OPTIM OR SOLVER
-        self._C.OPTIM = CN()
-        self._C.OPTIM.BATCH_SIZE = 4
-        self._C.OPTIM.VAL_BATCH_SIZE = 16
-        self._C.OPTIM.WORKERS = 4
-        self._C.OPTIM.EPOCH = 2
-        self._C.OPTIM.LR = 0.015
-        self._C.OPTIM.MOMENTUM = 0.9
-        self._C.OPTIM.WEIGHT_DECAY = 0.001
-        self._C.OPTIM.CLIP_GRADIENTS = 12.5
-        
         self._C.SOLVER = CN()
         self._C.SOLVER.LR_SCHEDULER_NAME = "constant"  # {'constant', 'cosine'}
         self._C.SOLVER.BATCH_SIZE = 32
@@ -107,16 +97,15 @@ class Config(object):
         
         self._C.DATASETS = CN()
         self._C.DATASETS.NAME = "shapenet"
-        self._C.DATASETS.SPLITS_FILE = "./sicgan/data/pix2mesh_splits_val05.json"
-        self._C.DATASETS.DATA_DIR = "/scratch/jiadeng_root/jiadeng/shared_data/datasets/ShapeNetSubset/ShapeNetPreprocessed_no_check_valid/"
+        self._C.DATASETS.SPLITS_FILE = "/scratch/jiadeng_root/jiadeng/shared_data/datasets/SICGAN_data/p2m_splits.json"
+        self._C.DATASETS.DATA_DIR = "/scratch/jiadeng_root/jiadeng/shared_data/datasets/SICGAN_data/"
         
         self._C.merge_from_file(config_yaml)
         self._C.merge_from_list(config_override)
         
         self._C.CKP = CN()
-        self._C.CKP.full_experiment_name = ("exp_%s_%s" % ( time.strftime("%m_%d_%H_%M_%S"), self._C.EXPERIMENT_NAME) )
+        self._C.CKP.full_experiment_name = self._C.EXPERIMENT_NAME#("exp_%s_%s" % ( time.strftime("%m_%d_%H_%M_%S"), self._C.EXPERIMENT_NAME) )
         self._C.CKP.experiment_path = os.path.join(self._C.RESULTS_DIR, self._C.CKP.full_experiment_name)
-        self._C.CKP.best_loss = sys.float_info.max
 
         # Make an instantiated object of this class immutable.
         #self._C.freeze()
@@ -136,9 +125,9 @@ class Config(object):
 
     def __str__(self):
         common_string: str = str(CN({"RANDOM_SEED": self._C.RANDOM_SEED})) + "\n"
-        common_string += str(CN({"DATA": self._C.SHAPENET_DATA})) + "\n"
-        common_string += str(CN({"BASE_MODEL": self._C.D})) + "\n"
-        common_string += str(CN({"OPTIM": self._C.OPTIM})) + "\n"
+        common_string += str(CN({"DATA": self._C.DATASETS})) + "\n"
+        common_string += str(CN({"BASE_MODEL": self._C.G})) + "\n"
+        common_string += str(CN({"SOLVER": self._C.SOLVER})) + "\n"
         common_string += str(CN({"CHECKPOINT": self._C.CKP})) + "\n"
         return common_string
 
