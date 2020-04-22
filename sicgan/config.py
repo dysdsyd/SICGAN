@@ -106,6 +106,7 @@ class Config(object):
         self._C.CKP = CN()
         self._C.CKP.full_experiment_name = self._C.EXPERIMENT_NAME#("exp_%s_%s" % ( time.strftime("%m_%d_%H_%M_%S"), self._C.EXPERIMENT_NAME) )
         self._C.CKP.experiment_path = os.path.join(self._C.RESULTS_DIR, self._C.CKP.full_experiment_name)
+        self._C.CKP.best_loss = sys.float_info.max
 
         # Make an instantiated object of this class immutable.
         #self._C.freeze()
