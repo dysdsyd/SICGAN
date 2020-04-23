@@ -91,6 +91,7 @@ if __name__ == "__main__":
         "chamfer_weight": _C.G.MESH_HEAD.CHAMFER_LOSS_WEIGHT,
         "normal_weight": _C.G.MESH_HEAD.NORMAL_LOSS_WEIGHT,
         "edge_weight": _C.G.MESH_HEAD.EDGE_LOSS_WEIGHT,
+        "lap_weight": _C.G.MESH_HEAD.LAPLACIAN_LOSS_WEIGHT,
         "gt_num_samples": _C.G.MESH_HEAD.GT_NUM_SAMPLES,
         "pred_num_samples": _C.G.MESH_HEAD.PRED_NUM_SAMPLES,
     }
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     mesh_loss = MeshLoss(**loss_fn_kwargs).cuda()
     
     ## Optimizers
-    G_optimizer = torch.optim.Adam(G.parameters(), lr= 0.001, betas=(0.5, 0.999))
+    G_optimizer = torch.optim.Adam(G.parameters(), lr= 1e-5)
     
     ## Tensorboard
     tb = SummaryWriter(os.path.join('tensorboard/', _C.CKP.full_experiment_name)) 
@@ -128,7 +129,7 @@ if __name__ == "__main__":
             
             ## Update G network
             G_optimizer.zero_grad()
-            meshes_G = G(imgs)
+            _, meshes_G = G(imgs)
             loss_G, _ = mesh_loss(meshes_G, meshes)
             loss_G.backward()
             G_optimizer.step()
@@ -137,7 +138,7 @@ if __name__ == "__main__":
             
             
             if _C.OVERFIT:
-                if step%10==0:
+                if step%2==0:
                     break
         
         # ----------------------------------------------------------------------------------------
@@ -150,11 +151,12 @@ if __name__ == "__main__":
             meshes = data[1].cuda()
             
             with torch.no_grad():
-                meshes_G = G(imgs)
+                _, meshes_G = G(imgs)
                 val_loss, _ = mesh_loss(meshes_G, meshes)
             val_losses.append(val_loss.item())
             if _C.OVERFIT:
-                break
+                if step%2==0:
+                    break
         
         print("===> Epoch[{}]: Loss_G: {:.4f}".format(epoch, np.mean(trn_losses)))
         tb.add_scalar('data/Training_loss', np.mean(trn_losses), epoch)    
@@ -163,8 +165,10 @@ if __name__ == "__main__":
         
         if (np.mean(val_losses) <= best_val_loss):
             best_val_loss = np.mean(val_losses) 
-            torch.save(G.state_dict(), os.path.join(_C.CKP.experiment_path,'p2m.pth'))
+            torch.save(G.state_dict(), os.path.join(_C.CKP.experiment_path,'G.pth'))
         print('Best Loss: ', best_val_loss)
+        if _C.OVERFIT and epoch==2:
+            break
     
 #         args = save_checkpoint(G = G,
 #                                D = D,
@@ -175,7 +179,8 @@ if __name__ == "__main__":
 #                                curr_step = step,
 #                                args = args,
 #                                filename = ('model@epoch%d.pkl' %(epoch)))
-          
+        
+    
         print('---------------------------------------------------------------------------------------\n')
     print('Finished Training')
     tb.close() 

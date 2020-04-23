@@ -1,9 +1,10 @@
 RANDOM_SEED: 0
 
 PHASE: "training"
-EXPERIMENT_NAME: "p2m_gan_run"
+EXPERIMENT_NAME: "p2m_gan"
 RESULTS_DIR: "results"
 OVERFIT: False
+Z: False
 
 SHAPENET_DATA:
     PATH: "/scratch/jiadeng_root/jiadeng/shared_data/datasets/ShapeNetCore.v1/"
@@ -35,9 +36,10 @@ G:
         GT_NUM_SAMPLES: 5000
         PRED_NUM_SAMPLES: 5000
         CHAMFER_LOSS_WEIGHT: 1.0
-        NORMAL_LOSS_WEIGHT: 0.0
-        EDGE_LOSS_WEIGHT: 0.2
-        ICO_SPHERE_LEVEL: 2.0
+        NORMAL_LOSS_WEIGHT: 0.00016
+        EDGE_LOSS_WEIGHT: 0.1
+        LAPLACIAN_LOSS_WEIGHT: 0.3
+        ICO_SPHERE_LEVEL: 2
 D:
     INPUT_MESH_FEATS: 3
     HIDDEN_DIMS: [16, 32, 64]

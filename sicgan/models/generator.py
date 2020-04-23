@@ -20,13 +20,17 @@ class Pixel2MeshHead(nn.Module):
         # backbone
         self.backbone, feat_dims = build_backbone(backbone)
         # mesh head
-        cfg.G.MESH_HEAD.COMPUTED_INPUT_CHANNELS = sum(feat_dims)
+        if cfg.Z == True:
+            cfg.G.MESH_HEAD.COMPUTED_INPUT_CHANNELS = sum(feat_dims) + 200
+        else:
+            cfg.G.MESH_HEAD.COMPUTED_INPUT_CHANNELS = sum(feat_dims)
+            
         self.mesh_head = MeshRefinementHead(cfg)
 
     def _get_projection_matrix(self, N, device):
         return self.K[None].repeat(N, 1, 1).to(device).detach()
 
-    def forward(self, imgs, z):    # z is the latent vector sampled from P(z|x)
+    def forward(self, imgs, z=None):    # z is the latent vector sampled from P(z|x)
         N = imgs.shape[0]
         device = imgs.device
 
@@ -36,5 +40,5 @@ class Pixel2MeshHead(nn.Module):
 #         print(P)
 
         init_meshes = ico_sphere(self.ico_sphere_level, device).extend(N)
-        refined_meshes = self.mesh_head(img_feats, init_meshes, P, subdivide=True)
+        refined_meshes = self.mesh_head(img_feats,z, init_meshes, P, subdivide=True)
         return None, refined_meshes

@@ -63,7 +63,7 @@ class MeshRefinementStage(nn.Module):
         """
         super(MeshRefinementStage, self).__init__()
 
-        self.bottleneck = nn.Linear(img_feat_dim+200, hidden_dim)
+        self.bottleneck = nn.Linear(img_feat_dim, hidden_dim)
 
         self.vert_offset = nn.Linear(hidden_dim + 3, 3)
 

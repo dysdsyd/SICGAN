@@ -95,17 +95,19 @@ if __name__ == "__main__":
         "chamfer_weight": _C.G.MESH_HEAD.CHAMFER_LOSS_WEIGHT,
         "normal_weight": _C.G.MESH_HEAD.NORMAL_LOSS_WEIGHT,
         "edge_weight": _C.G.MESH_HEAD.EDGE_LOSS_WEIGHT,
+        "lap_weight": _C.G.MESH_HEAD.LAPLACIAN_LOSS_WEIGHT,
         "gt_num_samples": _C.G.MESH_HEAD.GT_NUM_SAMPLES,
         "pred_num_samples": _C.G.MESH_HEAD.PRED_NUM_SAMPLES,
     }
+    
     
     mesh_loss = MeshLoss(**loss_fn_kwargs).cuda()
     clf_loss = nn.BCELoss().cuda()
     
     ## Optimizers
     # E_optimizer = torch.optim.Adam(E.parameters(), lr= 0.02, betas=(0.5, 0.999))
-    G_optimizer = torch.optim.Adam(G.parameters(), lr= 0.002, betas=(0.5, 0.999))
-    D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.02, betas=(0.5, 0.999))
+    G_optimizer = torch.optim.Adam(G.parameters(), lr= 1e-5)
+    D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.001)
     
     ## Tensorboard
     tb = SummaryWriter(os.path.join('tensorboard/', _C.CKP.full_experiment_name)) 
@@ -143,13 +145,13 @@ if __name__ == "__main__":
             # z, means, sigmas = E(imgs)
             # print(z)
             z = torch.randn((imgs.shape[0],200)).cuda()
-            meshes_G = G(imgs,z)
+            _, meshes_G = G(imgs,z)
             
             D_optimizer.zero_grad()
             
             ## Update D network
             with torch.no_grad():
-                D_neg = D(meshes_G)
+                D_neg = D(meshes_G[-1])
                 
             D_pos = D(meshes)
             # print('Device',D_neg.device)
@@ -160,13 +162,15 @@ if __name__ == "__main__":
             loss_D.backward(retain_graph=True)
             D_optimizer.step()
 
-            #Update E&G Network
+            #Update G Network
             # E_optimizer.zero_grad()
             G_optimizer.zero_grad()
+            
+            D_neg = D(meshes_G[-1])  
 
             # loss_kl_E = torch.mean(0.5 * torch.sum(torch.exp(sigmas) + means**2 - 1. - sigmas, 1))
             recon_loss, _ = mesh_loss(meshes_G, meshes)
-            loss_G = recon_loss + clf_loss(D_neg, torch.ones(D_neg.size()).cuda())
+            loss_G = 0.1*recon_loss + clf_loss(D_neg, torch.ones(D_neg.size()).cuda())
             # loss_EG = loss_kl_E + loss_G
             loss_G.backward()
             # E_optimizer.step()
@@ -181,7 +185,7 @@ if __name__ == "__main__":
             
             
             if _C.OVERFIT:
-                if step%10==0:
+                if step%2==0:
                     break
 
         # ----------------------------------------------------------------------------------------
@@ -199,9 +203,13 @@ if __name__ == "__main__":
             with torch.no_grad():
                 # z_v,_,_ = E(imgs)
                 z_v = torch.randn((imgs.shape[0],200)).cuda()
-                meshes_G = G(imgs,z_v) # -----Check which z you have to consider here!-------
+                _, meshes_G = G(imgs,z_v) # -----Check which z you have to consider here!-------
                 val_loss, _ = mesh_loss(meshes_G, meshes)
             val_losses.append(val_loss.item())
+            
+            if _C.OVERFIT:
+                if step%2==0:
+                    break
             
             
             
@@ -218,6 +226,8 @@ if __name__ == "__main__":
             torch.save(D.state_dict(),  os.path.join(_C.CKP.experiment_path,'D.pth'))
             torch.save(G.state_dict(),  os.path.join(_C.CKP.experiment_path,'G.pth'))
             # torch.save(E.state_dict(),  os.path.join(_C.CKP.experiment_path,'E.pth'))
+        if _C.OVERFIT and epoch==2:
+            break
           
         print('---------------------------------------------------------------------------------------\n')
     print('Finished Training')

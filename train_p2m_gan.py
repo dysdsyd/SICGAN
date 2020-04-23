@@ -100,6 +100,7 @@ if __name__ == "__main__":
         "chamfer_weight": _C.G.MESH_HEAD.CHAMFER_LOSS_WEIGHT,
         "normal_weight": _C.G.MESH_HEAD.NORMAL_LOSS_WEIGHT,
         "edge_weight": _C.G.MESH_HEAD.EDGE_LOSS_WEIGHT,
+        "lap_weight": _C.G.MESH_HEAD.LAPLACIAN_LOSS_WEIGHT,
         "gt_num_samples": _C.G.MESH_HEAD.GT_NUM_SAMPLES,
         "pred_num_samples": _C.G.MESH_HEAD.PRED_NUM_SAMPLES,
     }
@@ -108,8 +109,8 @@ if __name__ == "__main__":
     clf_loss = nn.BCELoss().cuda()
     
     ## Optimizers
-    G_optimizer = torch.optim.Adam(G.parameters(), lr= 0.001, betas=(0.5, 0.999))
-    D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.01, betas=(0.5, 0.999))
+    G_optimizer = torch.optim.Adam(G.parameters(), lr= 1e-5)
+    D_optimizer = torch.optim.Adam(D.parameters(), lr= 0.001)
     
     ## Tensorboard
     tb = SummaryWriter(os.path.join('tensorboard/', _C.CKP.full_experiment_name)) 
@@ -140,12 +141,12 @@ if __name__ == "__main__":
             imgs = data[0].cuda()
             meshes = data[1].cuda()
             
-            meshes_G = G(imgs, z=None)
+            _, meshes_G = G(imgs, z=None)
         
             ## Update D network
             D_optimizer.zero_grad()
             with torch.no_grad():
-                D_neg = D(meshes_G)  
+                D_neg = D(meshes_G[-1])  
             D_pos = D(meshes)
             
             
@@ -158,9 +159,9 @@ if __name__ == "__main__":
             G_optimizer.zero_grad()
             recon_loss, _ = mesh_loss(meshes_G, meshes)
             
-            D_neg = D(meshes_G)  
+            D_neg = D(meshes_G[-1])  
     
-            loss_G = recon_loss + clf_loss(D_neg, Variable(torch.ones(D_neg.size()).cuda()))
+            loss_G = 0.1*recon_loss + clf_loss(D_neg, Variable(torch.ones(D_neg.size()).cuda()))
             loss_G.backward()
             G_optimizer.step()
             
@@ -168,9 +169,8 @@ if __name__ == "__main__":
             D_losses.append(loss_D.item())
             G_losses.append(loss_G.item())
             
-            
             if _C.OVERFIT:
-                if step%3==0:
+                if step%2==0:
                     break
         
         # ----------------------------------------------------------------------------------------
@@ -185,11 +185,11 @@ if __name__ == "__main__":
             
             
             with torch.no_grad():
-                meshes_G = G(imgs, z=None)
+                _,meshes_G = G(imgs, z=None)
                 val_loss, _ = mesh_loss(meshes_G, meshes)
             val_losses.append(val_loss.item())
             if _C.OVERFIT:
-                if step%3==0:
+                if step%2==0:
                     break
 
         # Print Summary and update tensorboard
@@ -206,9 +206,8 @@ if __name__ == "__main__":
             torch.save(D.state_dict(), os.path.join(_C.CKP.experiment_path,'D.pth'))
         print('Best Loss: ', best_val_loss)
         
-        if _C.OVERFIT:
-            if epoch == 2:
-                break
+        if _C.OVERFIT and epoch==2:
+            break
 
 
         print('---------------------------------------------------------------------------------------\n')

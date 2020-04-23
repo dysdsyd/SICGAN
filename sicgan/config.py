@@ -49,6 +49,7 @@ class Config(object):
         self._C.EXPERIMENT_NAME = "default"
         self._C.RESULTS_DIR = "results"
         self._C.OVERFIT= False
+        self._C.Z= False
 
         self._C.SHAPENET_DATA = CN()
         self._C.SHAPENET_DATA.PATH = '/scratch/jiadeng_root/jiadeng/shared_data/datasets/ShapeNetCore.v1/'
@@ -86,8 +87,10 @@ class Config(object):
         self._C.G.MESH_HEAD.CHAMFER_LOSS_WEIGHT = 1.0
         self._C.G.MESH_HEAD.NORMAL_LOSS_WEIGHT = 1.0
         self._C.G.MESH_HEAD.EDGE_LOSS_WEIGHT = 1.0
+        self._C.G.MESH_HEAD.LAPLACIAN_LOSS_WEIGHT = 1.0
         self._C.G.MESH_HEAD.ICO_SPHERE_LEVEL = -1
         
+
         
         self._C.D = CN()
         self._C.D.INPUT_MESH_FEATS = 3

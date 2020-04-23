@@ -2,7 +2,7 @@ import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pytorch3d.loss import chamfer_distance, mesh_edge_loss
+from pytorch3d.loss import chamfer_distance, mesh_edge_loss, mesh_laplacian_smoothing
 from pytorch3d.ops import sample_points_from_meshes
 from pytorch3d.structures import Meshes
 
@@ -13,8 +13,9 @@ class MeshLoss(nn.Module):
     def __init__(
         self,
         chamfer_weight=1.0,
-        normal_weight=0.0,
+        normal_weight=1.6e-4,
         edge_weight=0.1,
+        lap_weight=0.3,
         gt_num_samples=5000,
         pred_num_samples=5000,
     ):
@@ -23,6 +24,7 @@ class MeshLoss(nn.Module):
         self.chamfer_weight = chamfer_weight
         self.normal_weight = normal_weight
         self.edge_weight = edge_weight
+        self.lap_weight = lap_weight
         self.gt_num_samples = gt_num_samples
         self.pred_num_samples = pred_num_samples
         
