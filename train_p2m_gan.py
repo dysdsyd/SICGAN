@@ -196,7 +196,7 @@ if __name__ == "__main__":
         print("===> Epoch[{}]: Loss_D: {:.4f} Loss_G: {:.4f} Loss_Recon: {:.4f}".format(epoch, np.mean(D_losses), np.mean(G_losses), np.mean(trn_losses)))
         print("===> Epoch[{}]: Valid Loss: {:.4f}".format(epoch, np.mean(val_losses)))
         tb.add_scalar('data/Loss_G', np.mean(G_losses), epoch)
-        tb.add_scalar('data/loss_D', np.mean(D_losses), epoch)
+        tb.add_scalar('data/Loss_D', np.mean(D_losses), epoch)
         tb.add_scalar('data/Training_loss', np.mean(trn_losses), epoch) 
         tb.add_scalar('data/Validation_Loss',  np.mean(val_losses), epoch)
         
