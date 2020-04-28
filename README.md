@@ -1,5 +1,27 @@
 # SICGAN
 
-Code for EECS 504: Introduction to Computer Vision Project
+Code for [EECS 504](https://web.eecs.umich.edu/~ahowens/eecs504/w20/): Introduction to Computer Vision Project
 
-![]({{site.baseurl}}//Screen%20Shot%202020-04-27%20at%2011.54.45%20PM.png)![Screen Shot 2020-04-27 at 11.54.45 PM.png]({{site.baseurl}}/Screen Shot 2020-04-27 at 11.54.45 PM.png)
+## Requirements
+- PyTorch 1.4.0
+- [PyTorch 3D](https://github.com/facebookresearch/pytorch3d) 
+- Cuda 10.1
+- Cudnn 7.6
+
+## Training
+
+### Pixel2Mesh Baseline
+`python train_p2m.py --config-yml config/train_p2m.yml`
+
+### Vanilla SICGAN
+`python train_p2m_gan.py --config-yml config/train_p2m_gan.yml`
+
+### SICGAN with random noise
+`python train_p2m_randgan.py --config-yml config/train_p2m_randgan.yml`
+
+## License
+The SICGAN is realeased under [MIT License](https://github.com/dysdsyd/SICGAN/blob/master/LICENSE)
+
+
+
+
