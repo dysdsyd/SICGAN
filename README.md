@@ -1,4 +1,6 @@
-# SICGAN - Single Image 3D Reconstruction based on Conditional GAN
+# SICGAN  
+
+### Single Image 3D Reconstruction based on Conditional GAN
 
 Code for [EECS 504](https://web.eecs.umich.edu/~ahowens/eecs504/w20/): Introduction to Computer Vision Project  
 
