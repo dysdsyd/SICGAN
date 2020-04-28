@@ -1,6 +1,11 @@
 # SICGAN
 
-Code for [EECS 504](https://web.eecs.umich.edu/~ahowens/eecs504/w20/): Introduction to Computer Vision Project
+Code for [EECS 504](https://web.eecs.umich.edu/~ahowens/eecs504/w20/): Introduction to Computer Vision Project  
+
+**Team Members:**
+[Danish Syed](https://github.com/dysdsyd)
+[Manas Buragohain](https://github.com/manasjyoti97)
+[Hansal Shah](https://github.com/hansalshah)
 
 ## Requirements
 - PyTorch 1.4.0
