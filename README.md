@@ -8,8 +8,8 @@ Code for [EECS 504](https://web.eecs.umich.edu/~ahowens/eecs504/w20/): Introduct
 ## Requirements
 - PyTorch 1.4.0
 - [PyTorch 3D](https://github.com/facebookresearch/pytorch3d) 
-- Cuda 10.1
-- Cudnn 7.6
+- CUDA 10.1
+- cuDNN 7.6
 
 ## Training
 
