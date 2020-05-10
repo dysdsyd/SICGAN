@@ -2,7 +2,7 @@
 
 ### Single Image 3D Reconstruction based on Conditional GAN
 
-Code for [EECS 504](https://web.eecs.umich.edu/~ahowens/eecs504/w20/): Introduction to Computer Vision Project  
+Code for [EECS 504](https://web.eecs.umich.edu/~ahowens/eecs504/w20/): Introduction to Computer Vision Project  [[report](https://github.com/dysdsyd/SICGAN/blob/master/data/SICGAN.pdf)]
 
 **Team Members:**  
 [Danish Syed<sup>*</sup>](https://github.com/dysdsyd), [Manas Buragohain<sup>*</sup>](https://github.com/manasjyoti97), [Hansal Shah<sup>*</sup>](https://github.com/hansalshah) \
