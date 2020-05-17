@@ -6,7 +6,8 @@
 Code for [EECS 504](https://web.eecs.umich.edu/~ahowens/eecs504/w20/): Introduction to Computer Vision Project
 
 **Team Members:**  
-[Danish Syed<sup>*</sup>](https://github.com/dysdsyd), [Manas Buragohain<sup>*</sup>](https://github.com/manasjyoti97), [Hansal Shah<sup>*</sup>](https://github.com/hansalshah) \
+[Danish Syed<sup>*</sup>](https://github.com/dysdsyd), [Hansal Shah<sup>*</sup>](https://github.com/hansalshah)
+[Manas Buragohain<sup>*</sup>](https://github.com/manasjyoti97),  \
 \* _Indicates equal contribution_
 
 ## Requirements
